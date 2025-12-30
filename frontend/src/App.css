@@ -140,3 +140,82 @@ html,
   transform: translate(2px, 2px);
   box-shadow: 2px 2px 0px var(--border-color);
 }
+/* ... dein bisheriges CSS ... */
+
+/* --- Ergänzungen für Interaktivität --- */
+
+.footer-bar {
+  border-top: 1px solid var(--border-color);
+  padding: 10px 2rem;
+  font-size: 12px;
+  display: flex;
+  gap: 2rem;
+}
+
+.right-panel {
+  /* Damit wir die Pfeile absolut positionieren können */
+  position: relative;
+}
+
+.nav-arrow {
+  position: absolute;
+  top: 50%;
+  transform: translateY(-50%);
+  background: var(--bg-paper);
+  border: 1px solid var(--border-color);
+  font-size: 1.5rem;
+  padding: 0.5rem 1rem;
+  cursor: pointer;
+  z-index: 10;
+  font-family: var(--font-mono); /* Fühlt sich technischer an */
+}
+
+.nav-arrow:hover {
+  background: var(--accent-yellow);
+}
+
+.nav-arrow.left {
+  left: 20px;
+}
+.nav-arrow.right {
+  right: 20px;
+}
+
+.item-display-container {
+  border: 1px solid var(--border-color);
+  padding: 20px;
+  background: white;
+  max-width: 350px;
+  /* Damit es über den Pfeilen liegt */
+  position: relative;
+  z-index: 20;
+  overflow: visible;
+}
+
+.item-image {
+  width: 100%;
+  height: 400px;
+  object-fit: contain;
+  object-position: center;
+  filter: grayscale(100%) contrast(120%);
+  margin-bottom: 15px;
+}
+
+.item-details {
+  border-top: 1px solid var(--border-color);
+  border-bottom: 1px solid var(--border-color);
+  padding: 5px 0;
+  font-size: 12px;
+  display: flex;
+  justify-content: space-between;
+  font-weight: 600;
+  letter-spacing: 1px;
+}
+
+.item-description {
+  font-size: 0.9rem;
+  margin-top: 15px;
+  margin-bottom: 0;
+  font-style: italic;
+  opacity: 0.8;
+}
