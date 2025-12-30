@@ -1,27 +1,142 @@
+:root {
+  /* Farbpalette basierend auf deinem Bild */
+  --bg-paper: #f3f2ef; /* Das helle Hintergrundgrau */
+  --accent-yellow: #e8d489; /* Das Senfgelb vom Header */
+  --accent-pink: #e6b8b8; /* Das sanfte Rosa */
+  --text-main: #1a1a1a; /* Fast Schwarz, weicher als #000 */
+  --border-color: #1a1a1a; /* Die harten Trennlinien */
+
+  /* Fonts */
+  --font-serif: "Playfair Display", serif;
+  --font-sans: "Inter", sans-serif;
+}
+
+body,
+html,
 #root {
-  max-width: 1280px;
-  margin: 0 auto;
-  padding: 2rem;
-  text-align: center;
-  font-family: Arial, sans-serif;
+  margin: 0;
+  padding: 0;
+  height: 100%;
+  width: 100%;
+  background-color: var(--bg-paper);
+  color: var(--text-main);
+  font-family: var(--font-sans);
+  /* Verhindert Scrollen für das "App-Feeling" */
+  overflow: hidden;
 }
 
-.card {
-  border: 1px solid #ccc;
-  padding: 20px;
-  margin: 20px auto;
-  border-radius: 15px;
-  max-width: 300px;
-  background-color: #f9f9f9;
-  color: black;
+.app-container {
+  height: 100vh;
+  display: flex;
+  flex-direction: column;
+  /* Dicker Rahmen außenrum wie im Bild */
+  border: 1px solid var(--border-color);
+  box-sizing: border-box;
 }
 
-button {
+/* --- Header Section --- */
+.top-bar {
+  display: flex;
+  border-bottom: 1px solid var(--border-color);
+  height: 60px;
+}
+
+.logo-area {
+  padding: 0 2rem;
+  display: flex;
+  align-items: center;
+  font-family: var(--font-serif);
+  font-size: 1.5rem;
+  font-style: italic;
+  border-right: 1px solid var(--border-color);
+  background: white; /* Logo hebt sich ab */
+}
+
+.nav-tabs {
+  display: flex;
+  flex-grow: 1;
+  background-color: var(--bg-paper);
+}
+
+.nav-item {
+  padding: 0 2rem;
+  display: flex;
+  align-items: center;
+  border-right: 1px solid var(--border-color);
+  font-size: 0.9rem;
+  text-transform: uppercase;
+  letter-spacing: 1px;
   cursor: pointer;
-  padding: 10px 20px;
-  background-color: #646cff;
-  color: white;
-  border: none;
-  border-radius: 5px;
-  font-size: 16px;
+  transition: background 0.2s;
+}
+
+.nav-item:hover {
+  background-color: var(--accent-pink);
+}
+
+.nav-item.active {
+  background-color: var(--accent-yellow);
+}
+
+/* --- Main Grid Layout --- */
+.main-content {
+  display: grid;
+  grid-template-columns: 1fr 1fr; /* Zwei Spalten: Text links, Bild rechts */
+  flex-grow: 1;
+}
+
+.left-panel {
+  padding: 4rem;
+  display: flex;
+  flex-direction: column;
+  justify-content: center;
+  border-right: 1px solid var(--border-color);
+  background-color: var(--accent-yellow); /* Gelber Hintergrund wie im Bild */
+}
+
+.hero-text {
+  font-family: var(--font-serif);
+  font-size: 4rem;
+  line-height: 1.1;
+  margin-bottom: 1rem;
+  font-weight: 400;
+}
+
+.sub-text {
+  font-size: 1.2rem;
+  opacity: 0.8;
+  max-width: 400px;
+  line-height: 1.5;
+}
+
+.right-panel {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  background-color: #fff;
+  position: relative;
+  /* Feines Raster im Hintergrund für den "Tech" Look */
+  background-image: radial-gradient(#ccc 1px, transparent 1px);
+  background-size: 20px 20px;
+}
+
+/* --- Interactive Elements --- */
+.action-button {
+  margin-top: 2rem;
+  padding: 1rem 2rem;
+  background: transparent;
+  border: 1px solid var(--border-color);
+  font-family: var(--font-sans);
+  text-transform: uppercase;
+  font-weight: 600;
+  cursor: pointer;
+  box-shadow: 4px 4px 0px var(--border-color); /* Harter Schatten */
+  transition:
+    transform 0.1s,
+    box-shadow 0.1s;
+}
+
+.action-button:active {
+  transform: translate(2px, 2px);
+  box-shadow: 2px 2px 0px var(--border-color);
 }
