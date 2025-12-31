@@ -1,11 +1,11 @@
-import React, { useState, useRef } from "react";
+import React, { useState, useEffect, useRef } from "react";
 import { useNavigate } from "react-router-dom";
 import "../App.css";
 
 const Avatar = () => {
   const navigate = useNavigate();
 
-  // State für die Formular-Daten (Text)
+  // State für Formular-Daten
   const [formData, setFormData] = useState({
     name: "",
     height: "",
@@ -13,66 +13,55 @@ const Avatar = () => {
     bodyType: "ATHLETIC",
   });
 
-  // State für die Bilder-VORSCHAU (für die Anzeige im Browser)
-  const [faceImage, setFaceImage] = useState(null);
-  const [bodyImage, setBodyImage] = useState(null);
+  // State für Bilder
+  const [faceImage, setFaceImage] = useState(null); // Vorschau URL
+  const [faceFile, setFaceFile] = useState(null); // Echte Datei
 
-  // State für die ECHTEN Dateien (für das Python Backend)
-  const [faceFile, setFaceFile] = useState(null);
-  const [bodyFile, setBodyFile] = useState(null);
-
-  // State für den Ladebalken
   const [isProcessing, setIsProcessing] = useState(false);
-
-  // Referenzen für die versteckten File-Inputs
   const faceInputRef = useRef(null);
-  const bodyInputRef = useRef(null);
 
-  // Helper: Text-Inputs speichern
+  // 1. NEU: Beim Laden prüfen, ob wir schon Daten im Speicher haben
+  useEffect(() => {
+    const savedData = localStorage.getItem("userBiometrics");
+    if (savedData) {
+      setFormData(JSON.parse(savedData));
+    }
+
+    // Optional: Auch das Gesichtsbild könnte man wiederherstellen,
+    // aber das ist komplexer wegen File-Security. Wir lassen das Bild erstmal leer bei Reload.
+  }, []);
+
+  // Helper: Text-Inputs speichern & direkt in LocalStorage schreiben
   const handleInputChange = (e) => {
-    setFormData({ ...formData, [e.target.name]: e.target.value });
+    const newData = { ...formData, [e.target.name]: e.target.value };
+    setFormData(newData);
+    localStorage.setItem("userBiometrics", JSON.stringify(newData));
   };
 
-  // Helper: Datei-Upload behandeln
-  const handleFileChange = (event, type) => {
+  const handleFileChange = (event) => {
     const file = event.target.files[0];
     if (file) {
-      // 1. Vorschau URL erstellen
-      const previewUrl = URL.createObjectURL(file);
-
-      // 2. Beides speichern: Vorschau und echte Datei
-      if (type === "face") {
-        setFaceImage(previewUrl);
-        setFaceFile(file);
-      }
-      if (type === "body") {
-        setBodyImage(previewUrl);
-        setBodyFile(file);
-      }
+      setFaceImage(URL.createObjectURL(file));
+      setFaceFile(file);
     }
   };
 
-  // Diese Funktion sendet die Daten an das Python Backend
   const handleGenerate = async () => {
-    // Validierung: Haben wir alles?
-    if (!faceFile || !bodyFile || !formData.name) {
-      alert("PLEASE COMPLETE ALL FIELDS AND UPLOADS.");
+    if (!faceFile || !formData.name) {
+      alert("PLEASE UPLOAD A FACE SCAN AND ENTER NAME.");
       return;
     }
 
     setIsProcessing(true);
 
-    // 1. Das Daten-Paket für das Backend schnüren (FormData)
     const payload = new FormData();
     payload.append("face_scan", faceFile);
-    payload.append("body_scan", bodyFile);
     payload.append("display_name", formData.name);
     payload.append("height", formData.height);
     payload.append("weight", formData.weight);
     payload.append("body_type", formData.bodyType);
 
     try {
-      // 2. An dein Python Backend senden
       const response = await fetch("http://localhost:8000/generate-avatar", {
         method: "POST",
         body: payload,
@@ -80,22 +69,23 @@ const Avatar = () => {
 
       if (response.ok) {
         const result = await response.json();
-        console.log("Server Antwort:", result);
 
-        // 3. Erfolg!
-        // Wir speichern die URL (hier nehmen wir lokal die Preview, in echt käme sie vom Server)
-        // damit die Wardrobe Seite das Bild anzeigen kann.
-        localStorage.setItem("userAvatar", bodyImage);
-        localStorage.setItem("userName", formData.name);
+        // 2. WICHTIG: Das Ergebnis (Avatar URL) speichern
+        if (result.data && result.data.avatar_url) {
+          localStorage.setItem("userAvatar", result.data.avatar_url);
+          localStorage.setItem("userName", formData.name);
 
-        alert("DIGITAL TWIN GENERATED SUCCESSFULLY!");
-        navigate("/"); // Zurück zur Startseite
+          // 3. WICHTIG: Sofort zur Wardrobe Seite leiten
+          navigate("/");
+        } else {
+          alert("Fehler: Keine Avatar URL erhalten.");
+        }
       } else {
-        alert("SERVER ERROR. IS BACKEND RUNNING?");
+        alert("Server Error.");
       }
     } catch (error) {
       console.error("Error:", error);
-      alert("CONNECTION FAILED. CHECK TERMINAL IF BACKEND IS RUNNING.");
+      alert("Connection Failed.");
     } finally {
       setIsProcessing(false);
     }
@@ -116,7 +106,7 @@ const Avatar = () => {
       <div
         style={{ display: "grid", gridTemplateColumns: "1fr 1fr", gap: "4rem" }}
       >
-        {/* Spalte 1: Biometrische Daten */}
+        {/* Formular Section */}
         <div className="form-section">
           <h3
             style={{
@@ -141,17 +131,18 @@ const Avatar = () => {
             </label>
             <input
               type="text"
-              name="name" // WICHTIG für handleInputChange
+              name="name"
+              value={formData.name}
               onChange={handleInputChange}
               placeholder="ENTER NAME"
               style={{
                 width: "100%",
                 padding: "10px",
                 border: "1px solid black",
-                background: "#fff",
               }}
             />
           </div>
+
           <div
             style={{
               display: "grid",
@@ -172,14 +163,14 @@ const Avatar = () => {
               </label>
               <input
                 type="number"
-                name="height" // WICHTIG
+                name="height"
+                value={formData.height}
                 onChange={handleInputChange}
                 placeholder="175"
                 style={{
                   width: "100%",
                   padding: "10px",
                   border: "1px solid black",
-                  background: "#fff",
                 }}
               />
             </div>
@@ -196,18 +187,19 @@ const Avatar = () => {
               </label>
               <input
                 type="number"
-                name="weight" // WICHTIG
+                name="weight"
+                value={formData.weight}
                 onChange={handleInputChange}
                 placeholder="65"
                 style={{
                   width: "100%",
                   padding: "10px",
                   border: "1px solid black",
-                  background: "#fff",
                 }}
               />
             </div>
           </div>
+
           <div className="input-group" style={{ marginTop: "15px" }}>
             <label
               style={{
@@ -220,13 +212,13 @@ const Avatar = () => {
               BODY TYPE
             </label>
             <select
-              name="bodyType" // WICHTIG
+              name="bodyType"
+              value={formData.bodyType}
               onChange={handleInputChange}
               style={{
                 width: "100%",
                 padding: "10px",
                 border: "1px solid black",
-                background: "#fff",
                 borderRadius: 0,
               }}
             >
@@ -238,7 +230,7 @@ const Avatar = () => {
           </div>
         </div>
 
-        {/* Spalte 2: Upload Zone */}
+        {/* Upload Section */}
         <div className="upload-section">
           <h3
             style={{
@@ -247,93 +239,40 @@ const Avatar = () => {
               marginBottom: "20px",
             }}
           >
-            02 / DATA UPLOAD
+            02 / FACE SCAN
           </h3>
-
-          {/* Hidden Inputs */}
           <input
             type="file"
             ref={faceInputRef}
             style={{ display: "none" }}
-            onChange={(e) => handleFileChange(e, "face")}
-            accept="image/*"
-          />
-          <input
-            type="file"
-            ref={bodyInputRef}
-            style={{ display: "none" }}
-            onChange={(e) => handleFileChange(e, "body")}
+            onChange={handleFileChange}
             accept="image/*"
           />
 
-          {/* Upload Box 1: Face */}
           <div
             className="upload-box"
             onClick={() => faceInputRef.current.click()}
             style={{
               border: "1px dashed black",
-              padding: faceImage ? "10px" : "40px",
-              textAlign: "center",
-              marginBottom: "20px",
-              cursor: "pointer",
-              background: "#fff",
-              height: "150px",
+              height: "200px",
               display: "flex",
               alignItems: "center",
               justifyContent: "center",
-              overflow: "hidden",
+              cursor: "pointer",
+              background: "#fff",
             }}
           >
             {faceImage ? (
               <img
                 src={faceImage}
-                alt="Face Preview"
+                alt="Preview"
                 style={{ height: "100%", width: "100%", objectFit: "cover" }}
               />
             ) : (
-              <div>
-                <p style={{ fontWeight: "bold" }}>FACE SCAN</p>
-                <p style={{ fontSize: "12px", opacity: 0.6 }}>
-                  Click to Upload
-                </p>
-              </div>
+              <p>CLICK TO UPLOAD FACE</p>
             )}
           </div>
 
-          {/* Upload Box 2: Body */}
-          <div
-            className="upload-box"
-            onClick={() => bodyInputRef.current.click()}
-            style={{
-              border: "1px dashed black",
-              padding: bodyImage ? "10px" : "40px",
-              textAlign: "center",
-              cursor: "pointer",
-              background: "#fff",
-              height: "250px",
-              display: "flex",
-              alignItems: "center",
-              justifyContent: "center",
-              overflow: "hidden",
-            }}
-          >
-            {bodyImage ? (
-              <img
-                src={bodyImage}
-                alt="Body Preview"
-                style={{ height: "100%", width: "100%", objectFit: "cover" }}
-              />
-            ) : (
-              <div>
-                <p style={{ fontWeight: "bold" }}>FULL BODY SCAN</p>
-                <p style={{ fontSize: "12px", opacity: 0.6 }}>
-                  Click to Upload
-                </p>
-              </div>
-            )}
-          </div>
-
-          {/* Generate Button mit Backend-Logik */}
           <button
             onClick={handleGenerate}
             className="action-button"
@@ -342,11 +281,10 @@ const Avatar = () => {
               marginTop: "30px",
               background: isProcessing ? "grey" : "var(--text-main)",
               color: "white",
-              cursor: isProcessing ? "wait" : "pointer",
             }}
             disabled={isProcessing}
           >
-            {isProcessing ? "SENDING TO SERVER..." : "GENERATE AVATAR"}
+            {isProcessing ? "GENERATING TWIN..." : "GENERATE AVATAR"}
           </button>
         </div>
       </div>

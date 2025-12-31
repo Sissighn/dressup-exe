@@ -56,6 +56,7 @@ async def try_gemini_generation(face_path, display_name, height, weight, body_ty
             f"Studio lighting, neutral grey background, high quality, photorealistic, 8k. "
             f"Maintain the exact facial features from the provided image. "
             f"Full body visible from head to toe."
+            f"IMPORTANT: Show the entire body from head to shoes, feet must be visible. "  # Ganzkörper betont
         )
 
         response = client.models.generate_content(
@@ -169,7 +170,7 @@ async def try_replicate_generation(face_path, display_name, height, weight, body
 @app.post("/generate-avatar")
 async def generate_avatar(
     face_scan: UploadFile = File(...),
-    body_scan: UploadFile = File(None),
+    # body_scan entfernt, da wir nur noch face_scan nutzen
     display_name: str = Form(...),
     height: str = Form(...),
     weight: str = Form(...),
@@ -182,9 +183,6 @@ async def generate_avatar(
         face_path = f"{UPLOAD_DIR}/face_{face_scan.filename}"
         with open(face_path, "wb") as f:
             shutil.copyfileobj(face_scan.file, f)
-
-        if body_scan:
-            print("ℹ️  Body Scan wird ignoriert")
 
         print(f"\n{'='*60}")
         print(f"🎨 Avatar für: {display_name}")

@@ -1,16 +1,17 @@
 :root {
-  /* Farbpalette basierend auf deinem Bild */
-  --bg-paper: #f3f2ef; /* Das helle Hintergrundgrau */
-  --accent-yellow: #e8d489; /* Das Senfgelb vom Header */
-  --accent-pink: #e6b8b8; /* Das sanfte Rosa */
-  --text-main: #1a1a1a; /* Fast Schwarz, weicher als #000 */
-  --border-color: #1a1a1a; /* Die harten Trennlinien */
+  /* Farbpalette */
+  --bg-paper: #f3f2ef;
+  --accent-yellow: #e8d489;
+  --accent-pink: #e6b8b8;
+  --text-main: #1a1a1a;
+  --border-color: #1a1a1a;
 
   /* Fonts */
   --font-serif: "Playfair Display", serif;
   --font-sans: "Inter", sans-serif;
 }
 
+/* --- Global Reset & Window Settings --- */
 body,
 html,
 #root {
@@ -21,15 +22,17 @@ html,
   background-color: var(--bg-paper);
   color: var(--text-main);
   font-family: var(--font-sans);
-  /* Verhindert Scrollen für das "App-Feeling" */
-  overflow: hidden;
+
+  /* Spotify-Style: Mindestgröße erzwingen, damit Layout nicht bricht */
+  min-width: 1100px;
+  min-height: 700px;
+  overflow: auto;
 }
 
 .app-container {
   height: 100vh;
   display: flex;
   flex-direction: column;
-  /* Dicker Rahmen außenrum wie im Bild */
   border: 1px solid var(--border-color);
   box-sizing: border-box;
 }
@@ -39,6 +42,7 @@ html,
   display: flex;
   border-bottom: 1px solid var(--border-color);
   height: 60px;
+  flex-shrink: 0; /* Verhindert Schrumpfen */
 }
 
 .logo-area {
@@ -49,7 +53,7 @@ html,
   font-size: 1.5rem;
   font-style: italic;
   border-right: 1px solid var(--border-color);
-  background: white; /* Logo hebt sich ab */
+  background: white;
 }
 
 .nav-tabs {
@@ -62,10 +66,13 @@ html,
   padding: 0 2rem;
   display: flex;
   align-items: center;
+  height: 100%;
   border-right: 1px solid var(--border-color);
   font-size: 0.9rem;
   text-transform: uppercase;
   letter-spacing: 1px;
+  text-decoration: none;
+  color: var(--text-main);
   cursor: pointer;
   transition: background 0.2s;
 }
@@ -76,51 +83,119 @@ html,
 
 .nav-item.active {
   background-color: var(--accent-yellow);
+  font-weight: 600;
 }
 
-/* --- Main Grid Layout --- */
+/* --- Main 3-Column Grid Layout --- */
 .main-content {
   display: grid;
-  grid-template-columns: 1fr 1fr; /* Zwei Spalten: Text links, Bild rechts */
+  /* 25% Intro | 40% Avatar | 35% Kleidung */
+  grid-template-columns: 25% 40% 35%;
   flex-grow: 1;
+  overflow: hidden; /* Wichtig: Scrollen nur innerhalb der Panels wenn nötig */
 }
 
+/* 1. Linke Spalte: Intro */
 .left-panel {
-  padding: 4rem;
+  padding: 3rem;
   display: flex;
   flex-direction: column;
   justify-content: center;
   border-right: 1px solid var(--border-color);
-  background-color: var(--accent-yellow); /* Gelber Hintergrund wie im Bild */
+  background-color: var(--accent-yellow);
+  position: relative;
+  z-index: 2;
 }
 
 .hero-text {
   font-family: var(--font-serif);
-  font-size: 4rem;
+  font-size: 3.5rem; /* Etwas kleiner damit es gut passt */
   line-height: 1.1;
   margin-bottom: 1rem;
   font-weight: 400;
 }
 
 .sub-text {
-  font-size: 1.2rem;
+  font-size: 1.1rem;
   opacity: 0.8;
   max-width: 400px;
   line-height: 1.5;
 }
 
+/* 2. Mittlere Spalte: Avatar Stage */
+.center-panel {
+  background-color: #f0f0f0; /* Studio Grau */
+  display: flex;
+  align-items: flex-end; /* Avatar steht unten */
+  justify-content: center;
+  border-right: 1px solid var(--border-color);
+  position: relative;
+  overflow: hidden;
+}
+
+/* 3. Rechte Spalte: Kleidung (Split View) */
 .right-panel {
+  display: flex;
+  flex-direction: column; /* Stapelt Tops und Bottoms */
+  background-color: #fff;
+}
+
+.clothing-section {
+  flex: 1; /* Nimmt 50% der Höhe */
+  border-bottom: 1px solid var(--border-color);
+  position: relative;
   display: flex;
   align-items: center;
   justify-content: center;
-  background-color: #fff;
-  position: relative;
-  /* Feines Raster im Hintergrund für den "Tech" Look */
-  background-image: radial-gradient(#ccc 1px, transparent 1px);
-  background-size: 20px 20px;
+  overflow: hidden;
 }
 
-/* --- Interactive Elements --- */
+.clothing-section:last-child {
+  border-bottom: none;
+}
+
+.section-label {
+  position: absolute;
+  top: 10px;
+  left: 10px;
+  font-size: 10px;
+  font-weight: bold;
+  letter-spacing: 1px;
+  z-index: 10;
+  background: white;
+  padding: 2px 5px;
+  border: 1px solid black;
+}
+
+/* --- Navigation Arrows (Für Kleidung) --- */
+.nav-arrow {
+  background: transparent;
+  border: 1px solid var(--border-color);
+  font-family: monospace;
+  font-size: 1.2rem;
+  cursor: pointer;
+  padding: 5px 10px;
+  position: absolute;
+  top: 50%;
+  transform: translateY(-50%);
+  z-index: 20;
+  background: white;
+  transition: background 0.2s;
+}
+
+.nav-arrow:hover {
+  background: var(--accent-yellow);
+}
+
+.nav-arrow.left {
+  left: 20px;
+}
+
+.nav-arrow.right {
+  right: 20px;
+}
+
+/* --- Buttons & Footer --- */
 .action-button {
   margin-top: 2rem;
   padding: 1rem 2rem;
@@ -130,7 +205,7 @@ html,
   text-transform: uppercase;
   font-weight: 600;
   cursor: pointer;
-  box-shadow: 4px 4px 0px var(--border-color); /* Harter Schatten */
+  box-shadow: 4px 4px 0px var(--border-color);
   transition:
     transform 0.1s,
     box-shadow 0.1s;
@@ -140,9 +215,6 @@ html,
   transform: translate(2px, 2px);
   box-shadow: 2px 2px 0px var(--border-color);
 }
-/* ... dein bisheriges CSS ... */
-
-/* --- Ergänzungen für Interaktivität --- */
 
 .footer-bar {
   border-top: 1px solid var(--border-color);
@@ -150,79 +222,22 @@ html,
   font-size: 12px;
   display: flex;
   gap: 2rem;
+  background-color: var(--bg-paper);
+  flex-shrink: 0;
 }
 
-.right-panel {
-  /* Damit wir die Pfeile absolut positionieren können */
-  position: relative;
+/* --- Upload / Form Styles (Avatar Page) --- */
+.form-section,
+.upload-section {
+  background: white;
+  padding: 20px;
+  border: 1px solid var(--border-color);
+  box-shadow: 4px 4px 0px var(--border-color);
 }
 
-.nav-item {
-  /* Layout */
-  padding: 0 2rem;
-  display: flex;
-  align-items: center; /* Text vertikal zentrieren */
-  height: 100%; /* WICHTIG: Damit der Hover über die ganze Höhe geht */
-
-  /* Borders & Colors */
-  border-right: 1px solid var(--border-color);
-
-  /* Typography */
-  font-size: 0.9rem;
-  text-transform: uppercase;
-  letter-spacing: 1px;
-
-  /* Link Styles resetten */
-  text-decoration: none; /* Keine Unterstreichung */
-  color: var(--text-main); /* Farbe schwarz lassen */
-  cursor: pointer;
+.upload-box {
   transition: background 0.2s;
 }
-
-.nav-item:hover {
-  background-color: var(--accent-pink);
-}
-
-.nav-item.active {
-  background-color: var(--accent-yellow);
-  font-weight: 600; /* Aktiver Tab etwas fetter */
-}
-
-.item-display-container {
-  border: 1px solid var(--border-color);
-  padding: 20px;
-  background: white;
-  max-width: 350px;
-  /* Damit es über den Pfeilen liegt */
-  position: relative;
-  z-index: 20;
-  overflow: visible;
-}
-
-.item-image {
-  width: 100%;
-  height: 400px;
-  object-fit: contain;
-  object-position: center;
-  filter: grayscale(100%) contrast(120%);
-  margin-bottom: 15px;
-}
-
-.item-details {
-  border-top: 1px solid var(--border-color);
-  border-bottom: 1px solid var(--border-color);
-  padding: 5px 0;
-  font-size: 12px;
-  display: flex;
-  justify-content: space-between;
-  font-weight: 600;
-  letter-spacing: 1px;
-}
-
-.item-description {
-  font-size: 0.9rem;
-  margin-top: 15px;
-  margin-bottom: 0;
-  font-style: italic;
-  opacity: 0.8;
+.upload-box:hover {
+  background: #f9f9f9 !important;
 }
