@@ -1,12 +1,17 @@
 from fastapi import FastAPI, UploadFile, File, Form
 from fastapi.middleware.cors import CORSMiddleware
+from fastapi.staticfiles import StaticFiles
 import os
 import shutil
-from typing import Optional
+import replicate
+from dotenv import load_dotenv
+
+# Lädt den API Key
+load_dotenv()
 
 app = FastAPI()
 
-# CORS erlaubt Zugriff vom Frontend
+# CORS Setup
 app.add_middleware(
     CORSMiddleware,
     allow_origins=["http://localhost:5173"],
@@ -17,6 +22,7 @@ app.add_middleware(
 
 UPLOAD_DIR = "uploads"
 os.makedirs(UPLOAD_DIR, exist_ok=True)
+app.mount("/uploads", StaticFiles(directory="uploads"), name="uploads")
 
 
 @app.get("/")
@@ -24,46 +30,66 @@ def read_root():
     return {"status": "DressUp AI Backend Online"}
 
 
-# Der NEUE "Digital Twin" Endpunkt
 @app.post("/generate-avatar")
 async def generate_avatar(
-    # Wir erwarten zwei Dateien
     face_scan: UploadFile = File(...),
-    body_scan: UploadFile = File(...),
-    # Und die Text-Daten aus dem Formular
+    # body_scan ist optional, da wir den Körper generieren!
+    # Wir nehmen es trotzdem an, falls wir es später brauchen.
+    body_scan: UploadFile = File(None),
     display_name: str = Form(...),
-    height: int = Form(...),
-    weight: int = Form(...),
+    height: str = Form(...),
+    weight: str = Form(...),
     body_type: str = Form(...),
 ):
-    # 1. Dateien sicher benennen und speichern
-    # Wir nutzen f-strings für saubere Pfade
-    face_path = f"{UPLOAD_DIR}/face_{face_scan.filename}"
-    body_path = f"{UPLOAD_DIR}/body_{body_scan.filename}"
+    try:
+        # 1. Gesicht speichern (Das ist das Wichtigste!)
+        face_path = f"{UPLOAD_DIR}/face_{face_scan.filename}"
+        with open(face_path, "wb") as f:
+            shutil.copyfileobj(face_scan.file, f)
 
-    with open(face_path, "wb") as f:
-        shutil.copyfileobj(face_scan.file, f)
+        print(f"--> Neuer Digital Twin Auftrag für: {display_name}")
+        print(f"--> Stats: {height}cm, {weight}kg, Type: {body_type}")
 
-    with open(body_path, "wb") as f:
-        shutil.copyfileobj(body_scan.file, f)
+        # 2. Den perfekten Prompt bauen (Text-to-Image Logik)
+        # Wir beschreiben den Körper basierend auf den Inputs
+        # Hinweis: Wir gehen erstmal von einem weiblichen Model aus (da DressUp App meistens so startet),
+        # das können wir später auch dynamisch machen.
 
-    # 2. Hier würde später die AI aufgerufen werden
-    # Aktuell simulieren wir den Erfolg und geben die Pfade zurück
+        prompt_text = (
+            f"A realistic full body studio photo of a fashion model, "
+            f"{body_type} body shape, estimated weight {weight}kg, height {height}cm, "
+            f"standing elegantly, neutral expression, "
+            f"wearing simple tight white t-shirt and grey yoga pants, "
+            f"soft studio lighting, 8k resolution, photorealistic, high fashion look."
+        )
 
-    print(f"New Request: {display_name}, {height}cm, {weight}kg")
-    print(f"Saved images to: {face_path} and {body_path}")
+        print(f"--> AI Prompt: {prompt_text}")
 
-    return {
-        "status": "success",
-        "message": "Digital Twin initialization started",
-        "data": {
-            "name": display_name,
-            "avatar_url": f"http://localhost:8000/{body_path}",  # Simulierte URL
-        },
-    }
+        # 3. AI Aufrufen (InstantID auf Replicate)
+        # Dieses Modell ist spezialisiert darauf, das Gesicht zu behalten!
+        output = replicate.run(
+            "wangfuyun/full-body-instantid:c582510c034078864a78ba8f9a263c9d749666014ba6e6a1006509a25b2933d3",
+            input={
+                "image": open(face_path, "rb"),  # Das Gesicht des Users
+                "prompt": prompt_text,  # Die Beschreibung des Körpers
+                "negative_prompt": "ugly, distorted, messy, low quality, nsfw, text, watermark, bad hands, extra fingers",
+                "width": 768,
+                "height": 1024,  # Hochformat für Ganzkörper
+                "num_inference_steps": 30,
+                "guidance_scale": 5,
+            },
+        )
 
+        # Replicate gibt eine Liste zurück, wir nehmen das erste Bild
+        avatar_url = output[0] if isinstance(output, list) else output
+        print(f"--> Generierung erfolgreich: {avatar_url}")
 
-# Hilfs-Endpunkt, um die Bilder im Browser auch sehen zu können (Static Files)
-from fastapi.staticfiles import StaticFiles
+        return {
+            "status": "success",
+            "message": "Digital Twin generated successfully",
+            "data": {"name": display_name, "avatar_url": avatar_url},
+        }
 
-app.mount("/uploads", StaticFiles(directory="uploads"), name="uploads")
+    except Exception as e:
+        print(f"ERROR: {str(e)}")
+        return {"status": "error", "message": str(e)}
