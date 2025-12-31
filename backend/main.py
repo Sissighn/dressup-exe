@@ -20,20 +20,29 @@ load_dotenv()
 Base.metadata.create_all(bind=engine)
 
 # ------------------------------------
+from starlette.middleware.base import BaseHTTPMiddleware
 
 app = FastAPI()
 
-app.add_middleware(
-    CORSMiddleware,
-    allow_origins=["http://localhost:5173"],
-    allow_credentials=True,
-    allow_methods=["*"],
-    allow_headers=["*"],
-)
+
+class StaticCORSMiddleware(BaseHTTPMiddleware):
+    async def dispatch(self, request, call_next):
+        response = await call_next(request)
+        response.headers["Access-Control-Allow-Origin"] = "http://localhost:5173"
+        response.headers["Access-Control-Allow-Methods"] = "GET, POST, OPTIONS, DELETE"
+        response.headers["Access-Control-Allow-Headers"] = "*"
+        return response
+
+
+app.add_middleware(StaticCORSMiddleware)
 
 UPLOAD_DIR = "uploads"
 os.makedirs(UPLOAD_DIR, exist_ok=True)
-app.mount("/uploads", StaticFiles(directory="uploads"), name="uploads")
+BASE_DIR = os.path.dirname(os.path.abspath(__file__))
+UPLOAD_DIR = os.path.join(BASE_DIR, "uploads")
+os.makedirs(UPLOAD_DIR, exist_ok=True)
+
+app.mount("/uploads", StaticFiles(directory=UPLOAD_DIR), name="uploads")
 
 
 @app.get("/")
@@ -105,6 +114,33 @@ async def delete_item(item_id: int, db: Session = Depends(get_db)):
     db.commit()
 
     return {"status": "success", "message": f"Item {item_id} deleted"}
+
+
+@app.post("/try-on-outfit")
+async def try_on_outfit(
+    avatar_image: UploadFile = File(...),
+    top_image: UploadFile = File(...),
+    bottom_image: UploadFile = File(...),
+):
+    try:
+        # Temp Speicher
+        av_p = f"{UPLOAD_DIR}/temp_av.png"
+        tp_p = f"{UPLOAD_DIR}/temp_tp.png"
+        bt_p = f"{UPLOAD_DIR}/temp_bt.png"
+
+        with open(av_p, "wb") as f:
+            shutil.copyfileobj(avatar_image.file, f)
+        with open(tp_p, "wb") as f:
+            shutil.copyfileobj(top_image.file, f)
+        with open(bt_p, "wb") as f:
+            shutil.copyfileobj(bottom_image.file, f)
+
+        result = await services.try_gemini_outfit_generation(av_p, tp_p, bt_p)
+        if result["success"]:
+            return result
+        raise HTTPException(status_code=500, detail=result.get("error"))
+    except Exception as e:
+        raise HTTPException(status_code=500, detail=str(e))
 
 
 # -----------------------------
