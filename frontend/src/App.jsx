@@ -8,6 +8,7 @@ import {
 import "./App.css";
 import Wardrobe from "./pages/Wardrobe";
 import Avatar from "./pages/Avatar";
+import Closet from "./pages/Closet";
 
 // Wir lagern die Navigation aus, damit wir "active" States nutzen können
 const NavBar = () => {
@@ -33,6 +34,14 @@ const NavBar = () => {
         >
           MY MODEL
         </Link>
+        <Link
+          to="/closet"
+          className={`nav-item ${
+            location.pathname === "/closet" ? "active" : ""
+          }`}
+        >
+          CLOSET
+        </Link>
 
         {/* About ist (noch) kein Link, sieht aber so aus */}
         <div className="nav-item">ABOUT</div>
@@ -52,6 +61,7 @@ function App() {
         <Routes>
           <Route path="/" element={<Wardrobe />} />
           <Route path="/avatar" element={<Avatar />} />
+          <Route path="/closet" element={<Closet />} />
         </Routes>
 
         {/* Footer ist auch immer sichtbar */}

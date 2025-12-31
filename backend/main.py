@@ -1,6 +1,12 @@
-from fastapi import FastAPI, UploadFile, File, Form
+from fastapi import FastAPI, UploadFile, File, Form, Depends
 from fastapi.middleware.cors import CORSMiddleware
 from fastapi.staticfiles import StaticFiles
+
+from sqlalchemy import create_engine, Column, Integer, String
+from sqlalchemy.ext.declarative import declarative_base
+from sqlalchemy.orm import sessionmaker, Session
+
+# ------------------------------
 import os
 import shutil
 from dotenv import load_dotenv
@@ -8,6 +14,43 @@ from PIL import Image
 from io import BytesIO
 
 load_dotenv()
+
+BASE_DIR = os.path.dirname(os.path.abspath(__file__))
+DB_FOLDER = os.path.join(BASE_DIR, "../database")
+os.makedirs(DB_FOLDER, exist_ok=True)
+
+SQLALCHEMY_DATABASE_URL = f"sqlite:///{os.path.join(DB_FOLDER, 'closet.db')}"
+
+engine = create_engine(
+    SQLALCHEMY_DATABASE_URL, connect_args={"check_same_thread": False}
+)
+SessionLocal = sessionmaker(autocommit=False, autoflush=False, bind=engine)
+Base = declarative_base()
+
+
+# Das Datenbank-Modell
+class ClothingItem(Base):
+    __tablename__ = "clothes"
+    id = Column(Integer, primary_key=True, index=True)
+    name = Column(String, index=True)
+    category = Column(String)  # 'TOPS', 'BOTTOMS', 'SHOES', 'BAGS'
+    image_path = Column(String)
+
+
+# Tabelle erstellen
+Base.metadata.create_all(bind=engine)
+
+
+# Dependency
+def get_db():
+    db = SessionLocal()
+    try:
+        yield db
+    finally:
+        db.close()
+
+
+# ------------------------------------
 
 app = FastAPI()
 
@@ -27,10 +70,51 @@ app.mount("/uploads", StaticFiles(directory="uploads"), name="uploads")
 @app.get("/")
 def read_root():
     return {
-        "status": "Backend Online - Smart Avatar Generator",
-        "features": ["Auto-Fallback", "Gemini + Replicate"],
+        "status": "Backend Online - Smart Avatar & Closet Database",
+        "features": ["Auto-Fallback", "Gemini + Replicate", "SQLite Database"],
         "info": "Versucht zuerst Gemini, wechselt automatisch zu Replicate bei Quota-Error",
     }
+
+
+# --- NEU: CLOSET ENDPOINTS ---
+
+
+@app.post("/upload-item")
+async def upload_item(
+    file: UploadFile = File(...),
+    name: str = Form(...),
+    category: str = Form(...),
+    db: Session = Depends(get_db),
+):
+    # 1. Bild sicher benennen und speichern
+    safe_filename = f"{category}_{file.filename}".replace(" ", "_")
+    file_path = f"{UPLOAD_DIR}/{safe_filename}"
+
+    with open(file_path, "wb") as f:
+        shutil.copyfileobj(file.file, f)
+
+    # 2. URL generieren
+    image_url = f"http://localhost:8000/{file_path}"
+
+    # 3. In Datenbank speichern
+    new_item = ClothingItem(name=name, category=category, image_path=image_url)
+    db.add(new_item)
+    db.commit()
+    db.refresh(new_item)
+
+    return {"status": "success", "item": new_item}
+
+
+@app.get("/closet")
+async def get_closet(db: Session = Depends(get_db)):
+    items = db.query(ClothingItem).all()
+    return items
+
+
+# -----------------------------
+
+
+# --- AB HIER: DEIN BESTEHENDER AVATAR CODE (UNVERÄNDERT) ---
 
 
 async def try_gemini_generation(face_path, display_name, height, weight, body_type):
