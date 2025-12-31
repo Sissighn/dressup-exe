@@ -5,111 +5,77 @@ const Gallery = () => {
   const [looks, setLooks] = useState([]);
   const [loading, setLoading] = useState(true);
 
+  const fetchGallery = async () => {
+    try {
+      const res = await fetch("http://localhost:8000/gallery");
+      const data = await res.json();
+      setLooks(data);
+    } catch (e) {
+      console.error("Failed to load gallery", e);
+    } finally {
+      setLoading(false);
+    }
+  };
+
   useEffect(() => {
-    const fetchGallery = async () => {
-      try {
-        const res = await fetch("http://localhost:8000/gallery");
-        const data = await res.json();
-        setLooks(data);
-      } catch (e) {
-        console.error("Failed to load gallery", e);
-      } finally {
-        setLoading(false);
-      }
-    };
     fetchGallery();
   }, []);
 
+  const handleDelete = async (filename) => {
+    if (!window.confirm("PERMANENTLY DELETE THIS ASSET?")) return;
+    try {
+      const res = await fetch(`http://localhost:8000/delete-look/${filename}`, {
+        method: "DELETE",
+      });
+      if (res.ok) setLooks(looks.filter((l) => l.id !== filename));
+    } catch (e) {
+      alert("ERROR.");
+    }
+  };
+
   return (
-    <div
-      className="main-content"
-      style={{ display: "block", overflowY: "auto" }}
-    >
-      {/* HEADER BEREICH */}
-      <div
-        style={{
-          padding: "3rem 2rem",
-          background: "white",
-          borderBottom: "3px solid black",
-          marginBottom: "2rem",
-        }}
-      >
-        <h1 className="hero-text" style={{ fontSize: "4rem", margin: 0 }}>
+    <div className="gallery-page-container">
+      {/* HEADER: Zurück zum Original-Font, aber kompakt */}
+      <div className="gallery-header-clean">
+        <h1 className="hero-text" style={{ fontSize: "2rem", margin: 0 }}>
           THE LOOKBOOK.
         </h1>
-        <p
-          style={{
-            fontWeight: "bold",
-            textTransform: "uppercase",
-            letterSpacing: "2px",
-          }}
-        >
-          Captured Identities // Saved Assets
-        </p>
+        <div className="status-pill">ASSETS: {looks.length}</div>
       </div>
 
-      {/* GRID FÜR DIE OUTFITS */}
-      <div
-        style={{
-          display: "grid",
-          gridTemplateColumns: "repeat(auto-fill, minmax(280px, 1fr))",
-          gap: "30px",
-          padding: "0 2rem 4rem 2rem",
-        }}
-      >
+      <div className="gallery-grid-compact">
         {loading ? (
-          <p className="brutalist-loader-text">Loading Archive...</p>
+          <div className="brutalist-loader-box">INITIALIZING...</div>
         ) : looks.length > 0 ? (
           looks.map((look) => (
-            <div
-              key={look.id}
-              style={{
-                background: "white",
-                border: "3px solid black",
-                boxShadow: "10px 10px 0px black",
-                padding: "15px",
-                display: "flex",
-                flexDirection: "column",
-                gap: "10px",
-              }}
-            >
-              <img
-                src={look.url}
-                alt="Saved Look"
-                style={{
-                  width: "100%",
-                  height: "400px",
-                  objectFit: "cover",
-                  border: "2px solid black",
-                }}
-              />
-              <div
-                style={{
-                  background: "var(--accent-yellow)",
-                  padding: "10px",
-                  border: "2px solid black",
-                  fontSize: "0.8rem",
-                  fontWeight: "bold",
-                  textAlign: "center",
-                }}
-              >
-                LOOK_ID: {look.id.split("_").pop().substring(0, 8)}
-              </div>
+            <div key={look.id} className="neo-album-card">
               <button
-                className="action-button"
-                onClick={() => window.open(look.url, "_blank")}
-                style={{ marginTop: "5px", width: "100%", fontSize: "10px" }}
+                className="delete-btn-top"
+                onClick={() => handleDelete(look.id)}
               >
-                VIEW FULLSIZE
+                ✕
               </button>
+
+              <div className="neo-img-frame">
+                <img src={look.url} alt="Look" />
+              </div>
+
+              <div className="neo-card-footer-mustard">
+                <span className="asset-id-text">
+                  ID_{look.id.split("_").pop().substring(0, 6)}
+                </span>
+                <button
+                  className="expand-link-btn"
+                  onClick={() => window.open(look.url, "_blank")}
+                >
+                  VIEW
+                </button>
+              </div>
             </div>
           ))
         ) : (
-          <div
-            style={{ gridColumn: "1/-1", textAlign: "center", padding: "4rem" }}
-          >
-            <h2 style={{ opacity: 0.2 }}>ARCHIVE EMPTY.</h2>
-            <p>Go to Wardrobe to create your first look.</p>
+          <div className="empty-state">
+            <h2>ARCHIVE_EMPTY</h2>
           </div>
         )}
       </div>

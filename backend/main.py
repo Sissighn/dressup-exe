@@ -98,6 +98,26 @@ async def get_gallery(db: Session = Depends(get_db)):
     return outfits
 
 
+@app.delete("/delete-look/{filename}")
+async def delete_look(filename: str):
+    """Löscht einen archivierten Look vom Server"""
+    try:
+        # Sicherheitssperre: Nur Dateien löschen, die zum Archiv gehören
+        if not filename.startswith("archived_look_"):
+            raise HTTPException(
+                status_code=403, detail="Not permitted to delete this file"
+            )
+
+        file_path = os.path.join(UPLOAD_DIR, filename)
+        if os.path.exists(file_path):
+            os.remove(file_path)
+            return {"status": "success", "message": f"Look {filename} deleted"}
+        else:
+            raise HTTPException(status_code=404, detail="File not found")
+    except Exception as e:
+        raise HTTPException(status_code=500, detail=str(e))
+
+
 # --- CLOSET ENDPOINTS ---
 
 
