@@ -1,54 +1,62 @@
 import { useState, useEffect } from "react";
 import "../App.css";
 
-// Importiere Beispielbilder (Du kannst hier später deine echten Kleidungsstücke reinladen)
-import item1Img from "../assets/item1.png"; // Dein T-Shirt Bild
-
-// DUMMY DATEN: Später kommen die aus der Datenbank
-const TOPS_DATA = [
-  { id: 101, name: "COTTON_TEE_WHT", image: item1Img },
-  { id: 102, name: "SILK_BLOUSE_BLK", image: item1Img }, // Hier bräuchtest du eigentlich andere Bilder
-  { id: 103, name: "CROP_TOP_GRY", image: item1Img },
-];
-
-const BOTTOMS_DATA = [
-  { id: 201, name: "CARGO_PANT_01", image: item1Img }, // Hier Hosen-Bild nutzen
-  { id: 202, name: "DENIM_JEAN_BLU", image: item1Img },
-  { id: 203, name: "SKIRT_PLEATED", image: item1Img },
-];
-
 const Wardrobe = () => {
   const [userAvatar, setUserAvatar] = useState(null);
 
   // State für Kleidungsauswahl
+  const [tops, setTops] = useState([]);
+  const [bottoms, setBottoms] = useState([]);
   const [currentTopIndex, setCurrentTopIndex] = useState(0);
   const [currentBottomIndex, setCurrentBottomIndex] = useState(0);
 
-  // Avatar laden
+  // Avatar und Kleidung aus der Datenbank laden
   useEffect(() => {
+    // 1. Avatar aus dem Local Storage laden
     const savedAvatar = localStorage.getItem("userAvatar");
     if (savedAvatar) {
       setUserAvatar(savedAvatar);
     }
+
+    // 2. Kleidung vom Backend laden
+    const fetchClosetItems = async () => {
+      try {
+        const res = await fetch("http://localhost:8000/closet");
+        const allItems = await res.json();
+        // Filtern nach den benötigten Kategorien
+        setTops(allItems.filter((item) => item.category === "TOPS"));
+        setBottoms(allItems.filter((item) => item.category === "BOTTOMS"));
+      } catch (e) {
+        console.error("Failed to load closet items", e);
+      }
+    };
+
+    fetchClosetItems();
   }, []);
 
   // Navigation Funktionen
-  const nextTop = () =>
-    setCurrentTopIndex((prev) => (prev + 1) % TOPS_DATA.length);
-  const prevTop = () =>
-    setCurrentTopIndex((prev) =>
-      prev === 0 ? TOPS_DATA.length - 1 : prev - 1
-    );
+  const nextTop = () => {
+    if (tops.length === 0) return;
+    setCurrentTopIndex((prev) => (prev + 1) % tops.length);
+  };
+  const prevTop = () => {
+    if (tops.length === 0) return;
+    setCurrentTopIndex((prev) => (prev === 0 ? tops.length - 1 : prev - 1));
+  };
 
-  const nextBottom = () =>
-    setCurrentBottomIndex((prev) => (prev + 1) % BOTTOMS_DATA.length);
-  const prevBottom = () =>
+  const nextBottom = () => {
+    if (bottoms.length === 0) return;
+    setCurrentBottomIndex((prev) => (prev + 1) % bottoms.length);
+  };
+  const prevBottom = () => {
+    if (bottoms.length === 0) return;
     setCurrentBottomIndex((prev) =>
-      prev === 0 ? BOTTOMS_DATA.length - 1 : prev - 1
+      prev === 0 ? bottoms.length - 1 : prev - 1
     );
+  };
 
-  const currentTop = TOPS_DATA[currentTopIndex];
-  const currentBottom = BOTTOMS_DATA[currentBottomIndex];
+  const currentTop = tops.length > 0 ? tops[currentTopIndex] : null;
+  const currentBottom = bottoms.length > 0 ? bottoms[currentBottomIndex] : null;
 
   return (
     <div className="main-content">
@@ -103,21 +111,26 @@ const Wardrobe = () => {
             &lt;
           </button>
 
-          <div style={{ textAlign: "center" }}>
-            <img
-              src={currentTop.image}
-              style={{ height: "150px", objectFit: "contain" }}
-            />
-            <p
-              style={{
-                fontSize: "10px",
-                marginTop: "10px",
-                fontWeight: "bold",
-              }}
-            >
-              {currentTop.name}
-            </p>
-          </div>
+          {currentTop ? (
+            <div style={{ textAlign: "center" }}>
+              <img
+                src={currentTop.image_path}
+                alt={currentTop.name}
+                style={{ height: "150px", objectFit: "contain" }}
+              />
+              <p
+                style={{
+                  fontSize: "10px",
+                  marginTop: "10px",
+                  fontWeight: "bold",
+                }}
+              >
+                {currentTop.name}
+              </p>
+            </div>
+          ) : (
+            <p style={{ opacity: 0.5 }}>ADD TOPS TO CLOSET</p>
+          )}
 
           <button onClick={nextTop} className="nav-arrow right">
             &gt;
@@ -132,21 +145,26 @@ const Wardrobe = () => {
             &lt;
           </button>
 
-          <div style={{ textAlign: "center" }}>
-            <img
-              src={currentBottom.image}
-              style={{ height: "150px", objectFit: "contain" }}
-            />
-            <p
-              style={{
-                fontSize: "10px",
-                marginTop: "10px",
-                fontWeight: "bold",
-              }}
-            >
-              {currentBottom.name}
-            </p>
-          </div>
+          {currentBottom ? (
+            <div style={{ textAlign: "center" }}>
+              <img
+                src={currentBottom.image_path}
+                alt={currentBottom.name}
+                style={{ height: "150px", objectFit: "contain" }}
+              />
+              <p
+                style={{
+                  fontSize: "10px",
+                  marginTop: "10px",
+                  fontWeight: "bold",
+                }}
+              >
+                {currentBottom.name}
+              </p>
+            </div>
+          ) : (
+            <p style={{ opacity: 0.5 }}>ADD BOTTOMS TO CLOSET</p>
+          )}
 
           <button onClick={nextBottom} className="nav-arrow right">
             &gt;

@@ -1,4 +1,4 @@
-from fastapi import FastAPI, UploadFile, File, Form, Depends
+from fastapi import FastAPI, UploadFile, File, Form, Depends, HTTPException
 from fastapi.middleware.cors import CORSMiddleware
 from fastapi.staticfiles import StaticFiles
 from sqlalchemy.orm import Session
@@ -78,6 +78,33 @@ async def upload_item(
 async def get_closet(db: Session = Depends(get_db)):
     items = db.query(ClothingItem).all()
     return items
+
+
+@app.delete("/delete-item/{item_id}")
+async def delete_item(item_id: int, db: Session = Depends(get_db)):
+    # 1. Item in der Datenbank finden
+    item_to_delete = db.query(ClothingItem).filter(ClothingItem.id == item_id).first()
+
+    if not item_to_delete:
+        raise HTTPException(status_code=404, detail="Item not found")
+
+    # 2. Zugehörige Bilddatei vom Server löschen
+    try:
+        # Extrahiere den relativen Pfad aus der URL
+        # z.B. von "http://localhost:8000/uploads/TOPS_shirt.png" zu "uploads/TOPS_shirt.png"
+        if item_to_delete.image_path.startswith("http://localhost:8000/"):
+            local_path = item_to_delete.image_path.replace("http://localhost:8000/", "")
+            if os.path.exists(local_path):
+                os.remove(local_path)
+    except Exception as e:
+        # Logge den Fehler, aber fahre trotzdem fort, um den DB-Eintrag zu löschen
+        print(f"Could not delete file for item {item_id}: {e}")
+
+    # 3. Eintrag aus der Datenbank löschen
+    db.delete(item_to_delete)
+    db.commit()
+
+    return {"status": "success", "message": f"Item {item_id} deleted"}
 
 
 # -----------------------------

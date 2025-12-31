@@ -90,14 +90,14 @@ html,
 .main-content {
   display: grid;
   /* 25% Intro | 40% Avatar | 35% Kleidung */
-  grid-template-columns: 25% 40% 35%;
+  grid-template-columns: 27% 43% 30%;
   flex-grow: 1;
   overflow: hidden; /* Wichtig: Scrollen nur innerhalb der Panels wenn nötig */
 }
 
 /* 1. Linke Spalte: Intro */
 .left-panel {
-  padding: 3rem;
+  padding: 2rem;
   display: flex;
   flex-direction: column;
   justify-content: center;
