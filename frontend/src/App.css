@@ -157,28 +157,35 @@ html,
   position: relative;
 }
 
-.nav-arrow {
-  position: absolute;
-  top: 50%;
-  transform: translateY(-50%);
-  background: var(--bg-paper);
-  border: 1px solid var(--border-color);
-  font-size: 1.5rem;
-  padding: 0.5rem 1rem;
+.nav-item {
+  /* Layout */
+  padding: 0 2rem;
+  display: flex;
+  align-items: center; /* Text vertikal zentrieren */
+  height: 100%; /* WICHTIG: Damit der Hover über die ganze Höhe geht */
+
+  /* Borders & Colors */
+  border-right: 1px solid var(--border-color);
+
+  /* Typography */
+  font-size: 0.9rem;
+  text-transform: uppercase;
+  letter-spacing: 1px;
+
+  /* Link Styles resetten */
+  text-decoration: none; /* Keine Unterstreichung */
+  color: var(--text-main); /* Farbe schwarz lassen */
   cursor: pointer;
-  z-index: 10;
-  font-family: var(--font-mono); /* Fühlt sich technischer an */
+  transition: background 0.2s;
 }
 
-.nav-arrow:hover {
-  background: var(--accent-yellow);
+.nav-item:hover {
+  background-color: var(--accent-pink);
 }
 
-.nav-arrow.left {
-  left: 20px;
-}
-.nav-arrow.right {
-  right: 20px;
+.nav-item.active {
+  background-color: var(--accent-yellow);
+  font-weight: 600; /* Aktiver Tab etwas fetter */
 }
 
 .item-display-container {
