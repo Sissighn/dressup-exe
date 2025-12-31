@@ -9,8 +9,8 @@ import "./App.css";
 import Wardrobe from "./pages/Wardrobe";
 import Avatar from "./pages/Avatar";
 import Closet from "./pages/Closet";
+import Gallery from "./pages/Gallery"; // Korrigierter Import
 
-// Wir lagern die Navigation aus, damit wir "active" States nutzen können
 const NavBar = () => {
   const location = useLocation();
 
@@ -18,7 +18,6 @@ const NavBar = () => {
     <div className="top-bar">
       <div className="logo-area">dressup.</div>
       <div className="nav-tabs">
-        {/* Der Link IST jetzt das Item. Keine Verschachtelung mehr. */}
         <Link
           to="/"
           className={`nav-item ${location.pathname === "/" ? "active" : ""}`}
@@ -43,7 +42,16 @@ const NavBar = () => {
           CLOSET
         </Link>
 
-        {/* About ist (noch) kein Link, sieht aber so aus */}
+        {/* NEUER LINK ZUR GALLERIE */}
+        <Link
+          to="/gallery"
+          className={`nav-item ${
+            location.pathname === "/gallery" ? "active" : ""
+          }`}
+        >
+          LOOKBOOK
+        </Link>
+
         <div className="nav-item">ABOUT</div>
       </div>
     </div>
@@ -54,17 +62,15 @@ function App() {
   return (
     <Router>
       <div className="app-container">
-        {/* Die Navigation ist immer sichtbar */}
         <NavBar />
 
-        {/* Hier wechseln die Seiten je nach URL */}
         <Routes>
           <Route path="/" element={<Wardrobe />} />
           <Route path="/avatar" element={<Avatar />} />
           <Route path="/closet" element={<Closet />} />
+          <Route path="/gallery" element={<Gallery />} /> {/* Korrekte Route */}
         </Routes>
 
-        {/* Footer ist auch immer sichtbar */}
         <div className="footer-bar">
           <span>STATUS: ONLINE</span>
           <span>SYSTEM: REACT v18</span>

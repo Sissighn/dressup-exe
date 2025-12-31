@@ -12,11 +12,29 @@ const Wardrobe = () => {
   const [currentTopIndex, setCurrentTopIndex] = useState(0);
   const [currentBottomIndex, setCurrentBottomIndex] = useState(0);
 
-  // Try-On State
-  const [dressedAvatar, setDressedAvatar] = useState(null);
-  const [selectedTop, setSelectedTop] = useState(null);
-  const [selectedBottom, setSelectedBottom] = useState(null);
+  // --- PERSISTENZ-LOGIK: Initialisierung aus localStorage ---
+  const [selectedTop, setSelectedTop] = useState(() => {
+    const saved = localStorage.getItem("selectedTop");
+    return saved ? JSON.parse(saved) : null;
+  });
+  const [selectedBottom, setSelectedBottom] = useState(() => {
+    const saved = localStorage.getItem("selectedBottom");
+    return saved ? JSON.parse(saved) : null;
+  });
+  const [dressedAvatar, setDressedAvatar] = useState(() => {
+    return localStorage.getItem("dressedAvatar") || null;
+  });
+
   const [isGenerating, setIsGenerating] = useState(false);
+
+  // --- SYNC: Änderungen im localStorage speichern ---
+  useEffect(() => {
+    if (selectedTop)
+      localStorage.setItem("selectedTop", JSON.stringify(selectedTop));
+    if (selectedBottom)
+      localStorage.setItem("selectedBottom", JSON.stringify(selectedBottom));
+    if (dressedAvatar) localStorage.setItem("dressedAvatar", dressedAvatar);
+  }, [selectedTop, selectedBottom, dressedAvatar]);
 
   // Avatar und Kleidung beim Laden initialisieren
   useEffect(() => {
@@ -39,7 +57,6 @@ const Wardrobe = () => {
     fetchClosetItems();
   }, []);
 
-  // Navigation Funktionen für das Karussell
   const nextTop = () =>
     tops.length && setCurrentTopIndex((p) => (p + 1) % tops.length);
   const prevTop = () =>
@@ -60,13 +77,11 @@ const Wardrobe = () => {
 
     setIsGenerating(true);
     setDressedAvatar(null);
+    localStorage.removeItem("dressedAvatar");
 
     try {
       const fetchBlob = async (url) => {
-        const response = await fetch(url, {
-          mode: "cors",
-          cache: "no-cache",
-        });
+        const response = await fetch(url, { mode: "cors", cache: "no-cache" });
         if (!response.ok) throw new Error(`Fetch failed for ${url}`);
         return response.blob();
       };
@@ -88,8 +103,9 @@ const Wardrobe = () => {
 
       if (response.ok) {
         const result = await response.json();
-        // CACHE BUSTING: Zwingt den Browser das Bild neu zu laden
-        setDressedAvatar(`${result.outfit_url}?t=${Date.now()}`);
+        const newUrl = `${result.outfit_url}?t=${Date.now()}`;
+        setDressedAvatar(newUrl);
+        localStorage.setItem("dressedAvatar", newUrl);
       } else {
         const error = await response.json();
         alert(`AI Error: ${error.detail || "Failed to generate outfit"}`);
@@ -100,6 +116,16 @@ const Wardrobe = () => {
     } finally {
       setIsGenerating(false);
     }
+  };
+
+  // --- RESET LOGIK ---
+  const handleReset = () => {
+    setDressedAvatar(null);
+    setSelectedTop(null);
+    setSelectedBottom(null);
+    localStorage.removeItem("dressedAvatar");
+    localStorage.removeItem("selectedTop");
+    localStorage.removeItem("selectedBottom");
   };
 
   const handleDownload = async () => {
@@ -124,7 +150,6 @@ const Wardrobe = () => {
 
   return (
     <div className="main-content">
-      {/* 1. LINKE SPALTE: SCROLLABLE & KLEINERE ABSTÄNDE */}
       <div
         className="left-panel"
         style={{ maxHeight: "100vh", overflowY: "auto", paddingBottom: "20px" }}
@@ -133,8 +158,7 @@ const Wardrobe = () => {
           Where style <br /> becomes <br /> <i>identity.</i>
         </h1>
         <p className="sub-text">
-          Digital Twin Active. <br />
-          Curate your digital appearance.
+          Digital Twin Active. <br /> Curate your digital appearance.
         </p>
 
         <div
@@ -182,7 +206,38 @@ const Wardrobe = () => {
 
               <button
                 className="action-button"
-                onClick={() => setDressedAvatar(null)}
+                onClick={async () => {
+                  try {
+                    const response = await fetch(
+                      "http://localhost:8000/archive-look",
+                      {
+                        method: "POST",
+                        headers: { "Content-Type": "application/json" },
+                        body: JSON.stringify({ outfit_url: dressedAvatar }),
+                      }
+                    );
+                    if (response.ok) alert("LOOK SAVED TO DIGITAL ARCHIVE!");
+                    else alert("FAILED TO ARCHIVE LOOK.");
+                  } catch (error) {
+                    console.error("Archive error:", error);
+                  }
+                }}
+                style={{
+                  background: "white",
+                  color: "black",
+                  border: "2px solid black",
+                  fontWeight: "bold",
+                  padding: "10px",
+                  fontSize: "12px",
+                  boxShadow: "4px 4px 0px black",
+                }}
+              >
+                🗄️ ARCHIVE LOOK
+              </button>
+
+              <button
+                className="action-button"
+                onClick={handleReset}
                 style={{
                   background: "transparent",
                   color: "black",
@@ -212,21 +267,19 @@ const Wardrobe = () => {
         </div>
       </div>
 
-      {/* 2. MITTLERE SPALTE: AVATAR STAGE */}
       <div className="center-panel">
         {isGenerating ? (
           <div className="brutalist-loader-box">
             <div className="brutalist-loader-text">
-              PROCESSING
-              <span className="blink-block"></span>
+              PROCESSING<span className="blink-block"></span>
             </div>
             <div className="loader-status-line">
-              {">"} TOP_ID: {selectedTop?.id}
+              {" >"} TOP_ID: {selectedTop?.id}
             </div>
             <div className="loader-status-line">
-              {">"} BTM_ID: {selectedBottom?.id}
+              {" >"} BTM_ID: {selectedBottom?.id}
             </div>
-            <div className="loader-status-line">{">"} STITCHING...</div>
+            <div className="loader-status-line">{" >"} STITCHING...</div>
           </div>
         ) : displayImage ? (
           <img
@@ -247,7 +300,6 @@ const Wardrobe = () => {
         )}
       </div>
 
-      {/* 3. RECHTE SPALTE: ORIGINAL LAYOUT (UNBERÜHRT) */}
       <div className="right-panel">
         <div className="clothing-section">
           <span className="section-label">TOPS</span>

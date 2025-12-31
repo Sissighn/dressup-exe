@@ -246,25 +246,34 @@ async def try_gemini_outfit_generation(avatar_path, top_path, bottom_path):
         outfit_filename = f"{UPLOAD_DIR}/outfit_result_{os.path.basename(avatar_path)}"
 
         # Bildextraktion
+        # --- BILD-EXTRAKTION FIX ---
         image_saved = False
         if response.candidates and response.candidates[0].content.parts:
             for part in response.candidates[0].content.parts:
-                if part.inline_data or hasattr(part, "as_image"):
+                # Prüfen, ob as_image Methode existiert (SDK Standard)
+                if hasattr(part, "as_image") and part.as_image() is not None:
                     try:
                         generated_img = part.as_image()
                         generated_img.save(outfit_filename)
                         image_saved = True
-                    except:
+                        break
+                    except Exception as e:
+                        print(f"as_image failed: {e}")
+
+                # Fallback: Manuelle Extraktion nur wenn inline_data nicht None ist
+                if hasattr(part, "inline_data") and part.inline_data is not None:
+                    try:
                         image_data = base64.b64decode(part.inline_data.data)
                         with open(outfit_filename, "wb") as f:
                             f.write(image_data)
                         image_saved = True
-                    break
+                        break
+                    except Exception as e:
+                        print(f"Manual decode failed: {e}")
 
         if not image_saved:
-            print("⚠️ Stufe 1 fehlgeschlagen: AI hat kein Bild generiert.")
-            return {"success": False, "error": "Gemini hat kein Bild generiert."}
-
+            print("⚠️ Stufe 1 fehlgeschlagen: Keine Bilddaten in der AI-Antwort.")
+            return {"success": False, "error": "AI hat kein gültiges Bild generiert."}
         print(f"✅ Stufe 1 abgeschlossen. Basis-Bild: {outfit_filename}")
 
         # --- NEUER SCHRITT: Bild auf Original-Seitenverhältnis zuschneiden ---

@@ -44,6 +44,60 @@ def read_root():
     }
 
 
+# --- NEU: GALLERY ENDPOINTS ---
+import time
+
+
+@app.post("/archive-look")
+async def archive_look(payload: dict):
+    """Kopiert das temporäre Outfit-Bild in ein dauerhaftes Archiv-Bild"""
+    try:
+        temp_url = payload.get("outfit_url", "")
+        if not temp_url:
+            raise HTTPException(status_code=400, detail="No URL provided")
+
+        # Filename extrahieren (z.B. outfit_result_temp_av.png)
+        filename = temp_url.split("/")[-1].split("?")[0]
+        source_path = os.path.join(UPLOAD_DIR, filename)
+
+        if not os.path.exists(source_path):
+            raise HTTPException(status_code=404, detail="Source image not found")
+
+        # Neuen Namen für das Archiv generieren
+        new_filename = f"archived_look_{int(time.time())}.png"
+        dest_path = os.path.join(UPLOAD_DIR, new_filename)
+
+        # Datei kopieren
+        shutil.copy2(source_path, dest_path)
+
+        return {
+            "status": "success",
+            "archived_url": f"http://localhost:8000/uploads/{new_filename}",
+        }
+    except Exception as e:
+        raise HTTPException(status_code=500, detail=str(e))
+
+
+@app.get("/gallery")
+async def get_gallery(db: Session = Depends(get_db)):
+    outfits = []
+    if not os.path.exists(UPLOAD_DIR):
+        return []
+
+    for file in os.listdir(UPLOAD_DIR):
+        # NUR Bilder anzeigen, die explizit archiviert wurden
+        if file.startswith("archived_look_"):
+            outfits.append(
+                {
+                    "id": file,
+                    "url": f"http://localhost:8000/uploads/{file}",
+                    "date": os.path.getctime(os.path.join(UPLOAD_DIR, file)),
+                }
+            )
+    outfits.sort(key=lambda x: x["date"], reverse=True)
+    return outfits
+
+
 # --- CLOSET ENDPOINTS ---
 
 
