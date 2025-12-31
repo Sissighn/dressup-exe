@@ -181,6 +181,37 @@ async def delete_item(item_id: int, db: Session = Depends(get_db)):
 # --- OUTFIT & AVATAR LOGIK ---
 
 
+@app.post("/generate-avatar")
+async def generate_avatar(
+    face_scan: UploadFile = File(...),
+    display_name: str = Form(...),
+    height: str = Form(...),
+    weight: str = Form(...),
+    body_type: str = Form(...),
+    gender: str = Form(...),  # NEU: "male" oder "female"
+):
+    try:
+        face_path = os.path.join(UPLOAD_DIR, f"face_{face_scan.filename}")
+        with open(face_path, "wb") as f:
+            shutil.copyfileobj(face_scan.file, f)
+
+        # Wir geben gender an die services weiter
+        result = await services.try_gemini_generation(
+            face_path, display_name, height, weight, body_type, gender
+        )
+
+        if not result["success"]:
+            result = await services.try_replicate_generation(
+                face_path, display_name, height, weight, body_type, gender
+            )
+
+        if result["success"]:
+            return {"status": "success", "data": result}
+        raise Exception(result.get("error", "Generation failed"))
+    except Exception as e:
+        return {"status": "error", "message": str(e)}
+
+
 @app.post("/try-on-outfit")
 async def try_on_outfit(
     avatar_image: UploadFile = File(...),

@@ -40,7 +40,11 @@ const Wardrobe = () => {
   useEffect(() => {
     const savedAvatar = localStorage.getItem("userAvatar");
     if (savedAvatar) {
-      setUserAvatar(savedAvatar);
+      // Wir hängen einen Zeitstempel an, um den Cache zu umgehen
+      const cacheBusterUrl = savedAvatar.includes("?")
+        ? `${savedAvatar.split("?")[0]}?t=${Date.now()}`
+        : `${savedAvatar}?t=${Date.now()}`;
+      setUserAvatar(cacheBusterUrl);
     }
 
     const fetchClosetItems = async () => {

@@ -5,292 +5,180 @@ import replicate
 import requests
 import base64
 
-UPLOAD_DIR = "uploads"
+# WICHTIG: Absoluter Pfad verwenden!
+BASE_DIR = os.path.dirname(os.path.abspath(__file__))
+UPLOAD_DIR = os.path.join(BASE_DIR, "uploads")
+os.makedirs(UPLOAD_DIR, exist_ok=True)
 
 
-def crop_to_match_aspect_ratio(image_to_crop_path, reference_image_path):
-    """
-    Schneidet ein Bild so zu, dass es dem Seitenverhältnis eines Referenzbildes entspricht.
-    Der Zuschnitt erfolgt von der Mitte aus, um das Hauptmotiv zu erhalten.
-    """
+def resize_to_target(image_path, target_width=1080, target_height=1920):
+    """Skaliert Bild exakt auf 1080x1920 ohne Verzerrung."""
     try:
-        with Image.open(reference_image_path) as ref_img:
-            target_aspect = ref_img.width / ref_img.height
+        if not os.path.exists(image_path):
+            print(f"⚠️ Datei nicht gefunden für Resize: {image_path}")
+            return
 
-        with Image.open(image_to_crop_path) as img:
-            img_aspect = img.width / img.height
-
-            if abs(img_aspect - target_aspect) < 0.01:
-                print(
-                    "📐 Seitenverhältnis stimmt bereits überein. Kein Zuschnitt nötig."
-                )
+        with Image.open(image_path) as img:
+            if img.size == (target_width, target_height):
                 return
 
-            print(
-                f"📐 Passe Seitenverhältnis an. Ziel: {target_aspect:.2f}, Aktuell: {img_aspect:.2f}"
-            )
+            print(f"📏 Anpassung auf exakt {target_width}x{target_height}...")
+            target_ratio = target_width / target_height
+            img_ratio = img.width / img.height
 
-            if img_aspect > target_aspect:
-                # Bild ist breiter als das Ziel -> Breite zuschneiden
-                new_width = int(target_aspect * img.height)
-                offset = (img.width - new_width) / 2
-                crop_box = (offset, 0, img.width - offset, img.height)
+            if img_ratio > target_ratio:
+                new_width = int(target_height * img_ratio)
+                img = img.resize((new_width, target_height), Image.Resampling.LANCZOS)
+                left = (new_width - target_width) / 2
+                img = img.crop((left, 0, left + target_width, target_height))
             else:
-                # Bild ist höher als das Ziel -> Höhe zuschneiden
-                new_height = int(img.width / target_aspect)
-                offset = (img.height - new_height) / 2
-                crop_box = (0, offset, img.width, img.height - offset)
+                new_height = int(target_width / img_ratio)
+                img = img.resize((target_width, new_height), Image.Resampling.LANCZOS)
+                top = (new_height - target_height) / 2
+                img = img.crop((0, top, target_width, top + target_height))
 
-            cropped_img = img.crop(crop_box)
-            cropped_img.save(image_to_crop_path)
-            print(
-                f"✅ Bild erfolgreich auf {cropped_img.width}x{cropped_img.height} zugeschnitten."
-            )
-
+            img.save(image_path)
+            print(f"✅ Finales Format fixiert.")
     except Exception as e:
-        print(f"⚠️ Warnung: Zuschneiden des Bildes fehlgeschlagen: {e}")
+        print(f"⚠️ Resize fehlgeschlagen: {e}")
 
 
 async def apply_face_restoration(original_avatar_path, generated_outfit_path):
-    """
-    Post-Processing: Setzt das Original-Gesicht wieder auf den generierten Körper.
-    Nutzt ein spezialisiertes Replicate-Modell (InsightFace) für maximale Identitätstreue.
-    """
-    print("🧑‍🔧 Starte Gesichts-Wiederherstellung (Face Restoration)...")
+    """Setzt das Original-Gesicht wieder auf den generierten Körper."""
     try:
-
         output = replicate.run(
             "lucataco/faceswap:9a4298548422074c3f57258c5d544497314408314496c395973651431647436d",
             input={
                 "target_image": open(generated_outfit_path, "rb"),
                 "source_image": open(original_avatar_path, "rb"),
-                "swap_mode": "inswapper",  # Der beste Algorithmus für Identität
+                "swap_mode": "inswapper",
             },
         )
-
         if output:
             response = requests.get(output)
             if response.status_code == 200:
                 with open(generated_outfit_path, "wb") as f:
                     f.write(response.content)
-                print("✅ Gesicht erfolgreich wiederhergestellt und Bild aktualisiert!")
                 return True
-            else:
-                print("⚠️ Fehler beim Herunterladen des restaurierten Bildes.")
-
         return False
-
     except Exception as e:
-        print(
-            f"⚠️ Warnung: Gesichts-Wiederherstellung fehlgeschlagen. (Der Prozess läuft trotzdem weiter). Fehler: {str(e)}"
-        )
+        print(f"⚠️ Face Restoration fehlgeschlagen: {e}")
         return False
 
 
-async def try_gemini_generation(face_path, display_name, height, weight, body_type):
-    """Versuch 1: Gemini Nano Banana (schnell & günstig)"""
+async def try_gemini_generation(
+    face_path, display_name, height, weight, body_type, gender
+):
     try:
         from google import genai
 
-        print("🔵 Versuch 1: Gemini Nano Banana...")
-
         client = genai.Client(api_key=os.getenv("GOOGLE_API_KEY"))
-
         face_image = Image.open(face_path)
 
+        # Dein Original-Prompt
         prompt = (
-            f"Create a realistic full-body avatar of a {body_type} person with this face. "
-            f"The person should be approximately {height}cm tall and {weight}kg in weight. "
-            f"The avatar should wear simple, neutral clothing: a white tank top and grey leggings. "
-            f"The person should be standing upright in a natural pose, facing the camera. "
-            f"Studio lighting, neutral grey background, high quality, photorealistic, 8k. "
-            f"Maintain the exact facial features from the provided image. "
-            f"Full body visible from head to toe."
-            f"IMPORTANT: Show the entire body from head to shoes, feet must be visible. "
+            f"STRICT FORMAT RULE: Generate a vertical 9:16 portrait image (1080x1920 pixels). "
+            f"IMPORTANT: The ENTIRE body from HEAD to FEET must be VISIBLE in the 9:16 portrait format."
+            f"The output MUST be a tall portrait, regardless of the input image shape. "
+            f"\nCONTENT: A stunning, highly photorealistic full-body portrait of a {gender} with a {body_type} body type, featuring this exact face. "
+            f"- Visible head to toe. "
+            f"- Height: {height}cm, Weight: {weight}kg. "
+            f"- Clothing: High-quality sport white TANK top and grey leggings. "
+            f"- Pose: Standing upright, confident natural pose, facing camera. "
+            f"- Lighting: Soft cinematic studio lighting to enhance facial features naturally. "
+            f"- Background: Solid neutral grey studio background."
+            f"IMPORTANT: The person must be clearly {gender}. Maintain the exact facial identity from the image. "
         )
 
         response = client.models.generate_content(
-            model="gemini-2.5-flash-image",
-            contents=[prompt, face_image],
+            model="gemini-2.5-flash-image", contents=[prompt, face_image]
+        )
+        avatar_filename = os.path.join(
+            UPLOAD_DIR, f"avatar_{display_name.replace(' ', '_')}_gemini.png"
         )
 
-        avatar_filename = (
-            f"{UPLOAD_DIR}/avatar_{display_name.replace(' ', '_')}_gemini.png"
-        )
+        # Bild speichern Logik
+        image_saved = False
+        if response.candidates and response.candidates[0].content.parts:
+            for part in response.candidates[0].content.parts:
+                if hasattr(part, "as_image") and part.as_image() is not None:
+                    part.as_image().save(avatar_filename)
+                    image_saved = True
+                    break
 
-        for part in response.parts:
-            if part.inline_data is not None:
-                image = part.as_image()
-                image.save(avatar_filename)
-
-                avatar_url = f"http://localhost:8000/{avatar_filename}"
-                print("✅ Gemini Erfolg!")
-
-                return {"success": True, "provider": "gemini", "avatar_url": avatar_url}
-
-        return {"success": False, "error": "Keine Bilddaten in Response"}
-
+        if image_saved:
+            resize_to_target(avatar_filename, 1080, 1920)
+            return {
+                "success": True,
+                "avatar_url": f"http://localhost:8000/uploads/{os.path.basename(avatar_filename)}",
+            }
+        return {"success": False, "error": "Keine Bilddaten"}
     except Exception as e:
-        error_msg = str(e)
-        print(f"❌ Gemini fehlgeschlagen: {error_msg[:100]}...")
-
-        if (
-            "429" in error_msg
-            or "quota" in error_msg.lower()
-            or "RESOURCE_EXHAUSTED" in error_msg
-        ):
-            return {"success": False, "error": "quota_exceeded"}
-
-        return {"success": False, "error": error_msg}
-
-
-async def try_replicate_generation(face_path, display_name, height, weight, body_type):
-    """Versuch 2: Replicate PhotoMaker (Fallback)"""
-    try:
-        import replicate
-
-        print("🟠 Versuch 2: Replicate PhotoMaker (Fallback)...")
-
-        prompt = (
-            f"Create a realistic full-body avatar of a {body_type} person with this face. "
-            f"The person should be approximately {height}cm tall and {weight}kg in weight. "
-            f"The avatar should wear simple, neutral clothing: a white tank top and grey leggings. "
-            f"The person should be standing upright in a natural pose, facing the camera. "
-            f"Studio lighting, neutral grey background, high quality, photorealistic, 8k. "
-            f"Maintain the exact facial features from the provided image. "
-            f"Full body visible from head to toe."
-            f"IMPORTANT: Show the entire body from head to shoes, feet must be visible. "
-        )
-
-        output = replicate.run(
-            "tencentarc/photomaker:ddfc2b08d209f9fa8c1eca692712918bd449f695dabb4a958da31802a9570fe4",
-            input={
-                "prompt": prompt,
-                "num_steps": 30,
-                "style_name": "Photographic (Default)",
-                "input_image": open(face_path, "rb"),
-                "num_outputs": 1,
-                "guidance_scale": 5,
-                "negative_prompt": "nsfw, ugly, distorted, low quality, extra fingers",
-            },
-        )
-
-        avatar_url = output[0] if isinstance(output, list) else output
-        print("✅ Replicate Erfolg!")
-
-        return {"success": True, "provider": "replicate", "avatar_url": avatar_url}
-
-    except Exception as e:
-        print(f"❌ Replicate auch fehlgeschlagen: {str(e)}")
         return {"success": False, "error": str(e)}
 
 
 async def try_gemini_outfit_generation(avatar_path, top_path, bottom_path):
-    """
-    2-Stufen-Prozess:
-    1. Gemini generiert das Outfit auf dem Körper (Fokus auf Kleidung & Pose).
-    2. Replicate restauriert das originale Gesicht (Fokus auf Identität).
-    """
     try:
         from google import genai
         from google.genai import types
 
-        print("\n🚀 Starte 2-Stufen Outfit-Pipeline...")
-
         client = genai.Client(api_key=os.getenv("GOOGLE_API_KEY"))
 
-        # Bilder laden
         avatar_img = Image.open(avatar_path)
-        original_width, original_height = avatar_img.size
         top_img = Image.open(top_path)
         bottom_img = Image.open(bottom_path)
 
+        # Dein Original-Prompt
         prompt = (
-            "COMMAND: Perform a precise clothing substitution. "
-            "IMAGE 1 is the master reference for the person's body, pose, and the final image framing. "
-            "IMAGE 2 is the top to wear. IMAGE 3 is the bottom to wear. "
-            "\n\nRULES: "
-            "1. FINAL IMAGE COMPOSITION: The output MUST perfectly match the framing, zoom, and canvas composition of IMAGE 1. The final image dimensions should be portrait-style, approximately "
-            f"{original_width}x{original_height} pixels. Do not generate a square or landscape image. "
-            "2. BODY & POSE: The person's body shape, size, and standing pose must be identical to IMAGE 1. "
-            "3. CLOTHING: Replace the original clothing with the exact items from IMAGE 2 (top) and IMAGE 3 (bottom). "
-            "4. FACE: The face should remain consistent with IMAGE 1. A post-processing step will restore it perfectly, so focus on the body and clothes. "
-            "5. BACKGROUND: Maintain the same neutral grey studio background and lighting from IMAGE 1. "
-            "Output only the single final result."
+            "STRICT MANDATE: Generate ONLY a 9:16 portrait image (1080x1920). "
+            "Do not follow the aspect ratio of the input images if they are square. "
+            "Maintain the exact full-body framing of IMAGE 1 but replace clothes. "
+            "The final image must be tall and vertical (portrait)."
         )
 
-        print(
-            "⚡ Stufe 1: Gemini generiert Outfit & Pose (Modell: gemini-2.5-flash-image)..."
-        )
         response = client.models.generate_content(
             model="gemini-2.5-flash-image",
             contents=[prompt, avatar_img, top_img, bottom_img],
             config=types.GenerateContentConfig(
                 safety_settings=[
                     types.SafetySetting(
-                        category="HARM_CATEGORY_HATE_SPEECH", threshold="OFF"
-                    ),
-                    types.SafetySetting(
-                        category="HARM_CATEGORY_DANGEROUS_CONTENT", threshold="OFF"
-                    ),
-                    types.SafetySetting(
                         category="HARM_CATEGORY_SEXUALLY_EXPLICIT", threshold="OFF"
-                    ),
-                    types.SafetySetting(
-                        category="HARM_CATEGORY_HARASSMENT", threshold="OFF"
-                    ),
+                    )
                 ]
             ),
         )
 
-        outfit_filename = f"{UPLOAD_DIR}/outfit_result_{os.path.basename(avatar_path)}"
+        outfit_filename = os.path.join(
+            UPLOAD_DIR, f"outfit_result_{os.path.basename(avatar_path)}"
+        )
 
-        # Bildextraktion
-        # --- BILD-EXTRAKTION FIX ---
+        # Vollständige Speicher-Logik
         image_saved = False
         if response.candidates and response.candidates[0].content.parts:
             for part in response.candidates[0].content.parts:
-                # Prüfen, ob as_image Methode existiert (SDK Standard)
                 if hasattr(part, "as_image") and part.as_image() is not None:
-                    try:
-                        generated_img = part.as_image()
-                        generated_img.save(outfit_filename)
-                        image_saved = True
-                        break
-                    except Exception as e:
-                        print(f"as_image failed: {e}")
-
-                # Fallback: Manuelle Extraktion nur wenn inline_data nicht None ist
-                if hasattr(part, "inline_data") and part.inline_data is not None:
-                    try:
-                        image_data = base64.b64decode(part.inline_data.data)
-                        with open(outfit_filename, "wb") as f:
-                            f.write(image_data)
-                        image_saved = True
-                        break
-                    except Exception as e:
-                        print(f"Manual decode failed: {e}")
+                    part.as_image().save(outfit_filename)
+                    image_saved = True
+                    break
+                elif hasattr(part, "inline_data") and part.inline_data is not None:
+                    image_data = base64.b64decode(part.inline_data.data)
+                    with open(outfit_filename, "wb") as f:
+                        f.write(image_data)
+                    image_saved = True
+                    break
 
         if not image_saved:
-            print("⚠️ Stufe 1 fehlgeschlagen: Keine Bilddaten in der AI-Antwort.")
-            return {"success": False, "error": "AI hat kein gültiges Bild generiert."}
-        print(f"✅ Stufe 1 abgeschlossen. Basis-Bild: {outfit_filename}")
+            return {"success": False, "error": "AI hat kein Bild generiert."}
 
-        # --- NEUER SCHRITT: Bild auf Original-Seitenverhältnis zuschneiden ---
-        crop_to_match_aspect_ratio(
-            image_to_crop_path=outfit_filename, reference_image_path=avatar_path
-        )
+        # Format fixieren
+        resize_to_target(outfit_filename, 1080, 1920)
 
-        # Schritt 2: Replicate restauriert das Gesicht
-        # Wir rufen die neue Hilfsfunktion auf. Sie überschreibt das Bild, wenn sie erfolgreich ist.
+        # Gesicht wiederherstellen (Wichtig für Identität)
         await apply_face_restoration(avatar_path, outfit_filename)
 
-        # Wir geben die URL zurück. Das Bild ist jetzt entweder das Original von Gemini
-        # (falls Replicate versagt hat) oder die perfektionierte Version.
-        final_url = f"http://localhost:8000/{outfit_filename}"
-        print(f"🎉 Pipeline abgeschlossen. Finales Bild: {final_url}")
-        return {"success": True, "outfit_url": final_url}
-
+        return {
+            "success": True,
+            "outfit_url": f"http://localhost:8000/uploads/{os.path.basename(outfit_filename)}",
+        }
     except Exception as e:
-        print(f"❌ Fehler in der Pipeline: {str(e)}")
         return {"success": False, "error": str(e)}

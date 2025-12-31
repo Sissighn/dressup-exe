@@ -5,33 +5,29 @@ import "../App.css";
 const Avatar = () => {
   const navigate = useNavigate();
 
-  // State für Formular-Daten
+  // State für Formular-Daten inkl. GENDER
   const [formData, setFormData] = useState({
     name: "",
+    gender: "FEMALE", // Standardwert
     height: "",
     weight: "",
     bodyType: "ATHLETIC",
   });
 
   // State für Bilder
-  const [faceImage, setFaceImage] = useState(null); // Vorschau URL
-  const [faceFile, setFaceFile] = useState(null); // Echte Datei
+  const [faceImage, setFaceImage] = useState(null);
+  const [faceFile, setFaceFile] = useState(null);
 
   const [isProcessing, setIsProcessing] = useState(false);
   const faceInputRef = useRef(null);
 
-  // 1. NEU: Beim Laden prüfen, ob wir schon Daten im Speicher haben
   useEffect(() => {
     const savedData = localStorage.getItem("userBiometrics");
     if (savedData) {
       setFormData(JSON.parse(savedData));
     }
-
-    // Optional: Auch das Gesichtsbild könnte man wiederherstellen,
-    // aber das ist komplexer wegen File-Security. Wir lassen das Bild erstmal leer bei Reload.
   }, []);
 
-  // Helper: Text-Inputs speichern & direkt in LocalStorage schreiben
   const handleInputChange = (e) => {
     const newData = { ...formData, [e.target.name]: e.target.value };
     setFormData(newData);
@@ -57,6 +53,7 @@ const Avatar = () => {
     const payload = new FormData();
     payload.append("face_scan", faceFile);
     payload.append("display_name", formData.name);
+    payload.append("gender", formData.gender); // NEU: Sendet "MALE" oder "FEMALE"
     payload.append("height", formData.height);
     payload.append("weight", formData.weight);
     payload.append("body_type", formData.bodyType);
@@ -69,13 +66,9 @@ const Avatar = () => {
 
       if (response.ok) {
         const result = await response.json();
-
-        // 2. WICHTIG: Das Ergebnis (Avatar URL) speichern
         if (result.data && result.data.avatar_url) {
           localStorage.setItem("userAvatar", result.data.avatar_url);
           localStorage.setItem("userName", formData.name);
-
-          // 3. WICHTIG: Sofort zur Wardrobe Seite leiten
           navigate("/");
         } else {
           alert("Fehler: Keine Avatar URL erhalten.");
@@ -118,29 +111,67 @@ const Avatar = () => {
             01 / BIOMETRICS
           </h3>
 
-          <div className="input-group" style={{ marginBottom: "15px" }}>
-            <label
-              style={{
-                display: "block",
-                fontSize: "12px",
-                fontWeight: "bold",
-                marginBottom: "5px",
-              }}
-            >
-              DISPLAY NAME
-            </label>
-            <input
-              type="text"
-              name="name"
-              value={formData.name}
-              onChange={handleInputChange}
-              placeholder="ENTER NAME"
-              style={{
-                width: "100%",
-                padding: "10px",
-                border: "1px solid black",
-              }}
-            />
+          <div
+            style={{
+              display: "grid",
+              gridTemplateColumns: "1fr 1fr",
+              gap: "20px",
+              marginBottom: "15px",
+            }}
+          >
+            <div className="input-group">
+              <label
+                style={{
+                  display: "block",
+                  fontSize: "12px",
+                  fontWeight: "bold",
+                  marginBottom: "5px",
+                }}
+              >
+                DISPLAY NAME
+              </label>
+              <input
+                type="text"
+                name="name"
+                value={formData.name}
+                onChange={handleInputChange}
+                placeholder="ENTER NAME"
+                style={{
+                  width: "100%",
+                  padding: "10px",
+                  border: "1px solid black",
+                }}
+              />
+            </div>
+
+            {/* NEU: GENDER SELECTION */}
+            <div className="input-group">
+              <label
+                style={{
+                  display: "block",
+                  fontSize: "12px",
+                  fontWeight: "bold",
+                  marginBottom: "5px",
+                }}
+              >
+                GENDER
+              </label>
+              <select
+                name="gender"
+                value={formData.gender}
+                onChange={handleInputChange}
+                style={{
+                  width: "100%",
+                  padding: "10px",
+                  border: "1px solid black",
+                  borderRadius: 0,
+                  height: "41px",
+                }}
+              >
+                <option value="FEMALE">FEMALE</option>
+                <option value="MALE">MALE</option>
+              </select>
+            </div>
           </div>
 
           <div
@@ -222,10 +253,10 @@ const Avatar = () => {
                 borderRadius: 0,
               }}
             >
-              <option>ATHLETIC</option>
-              <option>SLIM</option>
-              <option>CURVY</option>
-              <option>RECTANGULAR</option>
+              <option value="ATHLETIC">ATHLETIC</option>
+              <option value="SLIM">SLIM</option>
+              <option value="CURVY">CURVY</option>
+              <option value="RECTANGULAR">RECTANGULAR</option>
             </select>
           </div>
         </div>
