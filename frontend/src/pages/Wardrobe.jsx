@@ -13,10 +13,10 @@ const Wardrobe = () => {
   const [currentBottomIndex, setCurrentBottomIndex] = useState(0);
 
   // Try-On State
-  const [dressedAvatar, setDressedAvatar] = useState(null); // Das generierte Outfit Bild
-  const [selectedTop, setSelectedTop] = useState(null); // Das für das Outfit ausgewählte Top
-  const [selectedBottom, setSelectedBottom] = useState(null); // Das für das Outfit ausgewählte Bottom
-  const [isGenerating, setIsGenerating] = useState(false); // Ladezustand
+  const [dressedAvatar, setDressedAvatar] = useState(null);
+  const [selectedTop, setSelectedTop] = useState(null);
+  const [selectedBottom, setSelectedBottom] = useState(null);
+  const [isGenerating, setIsGenerating] = useState(false);
 
   // Avatar und Kleidung beim Laden initialisieren
   useEffect(() => {
@@ -62,10 +62,9 @@ const Wardrobe = () => {
     setDressedAvatar(null);
 
     try {
-      // Hilfsfunktion: URL in Datei (Blob) umwandeln
       const fetchBlob = async (url) => {
         const response = await fetch(url, {
-          mode: "cors", // Erzwingt CORS-Modus
+          mode: "cors",
           cache: "no-cache",
         });
         if (!response.ok) throw new Error(`Fetch failed for ${url}`);
@@ -89,7 +88,8 @@ const Wardrobe = () => {
 
       if (response.ok) {
         const result = await response.json();
-        setDressedAvatar(result.outfit_url); // Zeige das neue Bild an
+        // CACHE BUSTING: Zwingt den Browser das Bild neu zu laden
+        setDressedAvatar(`${result.outfit_url}?t=${Date.now()}`);
       } else {
         const error = await response.json();
         alert(`AI Error: ${error.detail || "Failed to generate outfit"}`);
@@ -102,14 +102,34 @@ const Wardrobe = () => {
     }
   };
 
-  // Welches Bild zeigen wir in der Mitte an?
+  const handleDownload = async () => {
+    if (!dressedAvatar) return;
+    try {
+      const response = await fetch(dressedAvatar);
+      const blob = await response.blob();
+      const url = window.URL.createObjectURL(blob);
+      const link = document.createElement("a");
+      link.href = url;
+      link.download = `digital_twin_look_${Date.now()}.png`;
+      document.body.appendChild(link);
+      link.click();
+      document.body.removeChild(link);
+      window.URL.revokeObjectURL(url);
+    } catch (error) {
+      alert("DOWNLOAD FAILED.");
+    }
+  };
+
   const displayImage = dressedAvatar || userAvatar;
 
   return (
     <div className="main-content">
-      {/* 1. LINKE SPALTE: INTRO & ACTIONS */}
-      <div className="left-panel">
-        <h1 className="hero-text">
+      {/* 1. LINKE SPALTE: SCROLLABLE & KLEINERE ABSTÄNDE */}
+      <div
+        className="left-panel"
+        style={{ maxHeight: "100vh", overflowY: "auto", paddingBottom: "20px" }}
+      >
+        <h1 className="hero-text" style={{ fontSize: "2.8rem" }}>
           Where style <br /> becomes <br /> <i>identity.</i>
         </h1>
         <p className="sub-text">
@@ -117,13 +137,12 @@ const Wardrobe = () => {
           Curate your digital appearance.
         </p>
 
-        {/* ACTION BUTTONS */}
         <div
           style={{
-            marginTop: "40px",
+            marginTop: "30px",
             display: "flex",
             flexDirection: "column",
-            gap: "12px",
+            gap: "8px",
           }}
         >
           <button
@@ -134,39 +153,58 @@ const Wardrobe = () => {
               background:
                 !selectedTop || !selectedBottom || isGenerating
                   ? "#ccc"
-                  : "var(--text-main)",
+                  : "black",
               color: "white",
-              cursor:
-                !selectedTop || !selectedBottom || isGenerating
-                  ? "not-allowed"
-                  : "pointer",
+              padding: "10px",
+              fontSize: "12px",
+              cursor: isGenerating ? "not-allowed" : "pointer",
             }}
           >
             {isGenerating ? "AI GENERATING..." : "TRY THE COMBI ON"}
           </button>
 
           {dressedAvatar && (
-            <button
-              className="action-button"
-              onClick={() => setDressedAvatar(null)}
-              style={{
-                background: "transparent",
-                color: "black",
-                border: "1px solid black",
-              }}
-            >
-              RESET TO ORIGINAL
-            </button>
+            <>
+              <button
+                className="action-button"
+                onClick={handleDownload}
+                style={{
+                  background: "var(--accent-yellow)",
+                  color: "black",
+                  border: "2px solid black",
+                  fontWeight: "bold",
+                  padding: "10px",
+                  fontSize: "12px",
+                }}
+              >
+                💾 SAVE LOOK (.PNG)
+              </button>
+
+              <button
+                className="action-button"
+                onClick={() => setDressedAvatar(null)}
+                style={{
+                  background: "transparent",
+                  color: "black",
+                  border: "1px solid black",
+                  padding: "10px",
+                  fontSize: "12px",
+                }}
+              >
+                RESET TO ORIGINAL
+              </button>
+            </>
           )}
 
           <button
             className="action-button"
             onClick={() => navigate("/avatar")}
             style={{
-              marginTop: "10px",
-              fontSize: "12px",
+              marginTop: "5px",
+              fontSize: "11px",
               background: "transparent",
               border: "1px solid black",
+              padding: "8px",
             }}
           >
             RE-SCAN MODEL
@@ -177,14 +215,24 @@ const Wardrobe = () => {
       {/* 2. MITTLERE SPALTE: AVATAR STAGE */}
       <div className="center-panel">
         {isGenerating ? (
-          <div style={{ textAlign: "center", opacity: 0.5 }}>
-            <h2>Processing Outfit...</h2>
-            <p>Gemini is stitching your look together.</p>
+          <div className="brutalist-loader-box">
+            <div className="brutalist-loader-text">
+              PROCESSING
+              <span className="blink-block"></span>
+            </div>
+            <div className="loader-status-line">
+              {">"} TOP_ID: {selectedTop?.id}
+            </div>
+            <div className="loader-status-line">
+              {">"} BTM_ID: {selectedBottom?.id}
+            </div>
+            <div className="loader-status-line">{">"} STITCHING...</div>
           </div>
         ) : displayImage ? (
           <img
             src={displayImage}
             alt="Digital Twin"
+            className="avatar-image-display"
             style={{
               height: "95%",
               width: "auto",
@@ -195,14 +243,12 @@ const Wardrobe = () => {
         ) : (
           <div style={{ opacity: 0.3, textAlign: "center" }}>
             <h2>NO MODEL FOUND</h2>
-            <p>Please initialize in "My Model"</p>
           </div>
         )}
       </div>
 
-      {/* 3. RECHTE SPALTE: SELECTION */}
+      {/* 3. RECHTE SPALTE: ORIGINAL LAYOUT (UNBERÜHRT) */}
       <div className="right-panel">
-        {/* TOPS SECTION */}
         <div className="clothing-section">
           <span className="section-label">TOPS</span>
           <button onClick={prevTop} className="nav-arrow left">
@@ -248,7 +294,6 @@ const Wardrobe = () => {
           </button>
         </div>
 
-        {/* BOTTOMS SECTION */}
         <div className="clothing-section">
           <span className="section-label">BOTTOMS</span>
           <button onClick={prevBottom} className="nav-arrow left">
