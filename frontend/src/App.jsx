@@ -9,7 +9,8 @@ import "./App.css";
 import Wardrobe from "./pages/Wardrobe";
 import Avatar from "./pages/Avatar";
 import Closet from "./pages/Closet";
-import Gallery from "./pages/Gallery"; // Korrigierter Import
+import Gallery from "./pages/Gallery";
+import About from "./pages/About";
 
 const NavBar = () => {
   const location = useLocation();
@@ -42,7 +43,6 @@ const NavBar = () => {
           CLOSET
         </Link>
 
-        {/* NEUER LINK ZUR GALLERIE */}
         <Link
           to="/gallery"
           className={`nav-item ${
@@ -52,7 +52,15 @@ const NavBar = () => {
           LOOKBOOK
         </Link>
 
-        <div className="nav-item">ABOUT</div>
+        {/* JETZT ALS LINK DEFINIERT */}
+        <Link
+          to="/about"
+          className={`nav-item ${
+            location.pathname === "/about" ? "active" : ""
+          }`}
+        >
+          ABOUT
+        </Link>
       </div>
     </div>
   );
@@ -68,7 +76,8 @@ function App() {
           <Route path="/" element={<Wardrobe />} />
           <Route path="/avatar" element={<Avatar />} />
           <Route path="/closet" element={<Closet />} />
-          <Route path="/gallery" element={<Gallery />} /> {/* Korrekte Route */}
+          <Route path="/gallery" element={<Gallery />} />
+          <Route path="/about" element={<About />} />
         </Routes>
 
         <div className="footer-bar">
