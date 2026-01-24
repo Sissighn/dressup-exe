@@ -1,0 +1,48 @@
+/* --- Header Section --- */
+.top-bar {
+  display: flex;
+  border-bottom: 1px solid var(--border-color);
+  height: 60px;
+  flex-shrink: 0; /* Verhindert Schrumpfen */
+}
+
+.logo-area {
+  padding: 0 2rem;
+  display: flex;
+  align-items: center;
+  font-family: var(--font-serif);
+  font-size: 1.5rem;
+  font-style: italic;
+  border-right: 1px solid var(--border-color);
+  background: white;
+}
+
+.nav-tabs {
+  display: flex;
+  flex-grow: 1;
+  background-color: var(--bg-paper);
+}
+
+.nav-item {
+  padding: 0 2rem;
+  display: flex;
+  align-items: center;
+  height: 100%;
+  border-right: 1px solid var(--border-color);
+  font-size: 0.9rem;
+  text-transform: uppercase;
+  letter-spacing: 1px;
+  text-decoration: none;
+  color: var(--text-main);
+  cursor: pointer;
+  transition: background 0.2s;
+}
+
+.nav-item:hover {
+  background-color: var(--accent-pink);
+}
+
+.nav-item.active {
+  background-color: var(--accent-yellow);
+  font-weight: 600;
+}

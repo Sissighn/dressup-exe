@@ -1,5 +1,6 @@
 import React from "react";
 import { NavLink } from "react-router-dom";
+import "./header.css"; // Pass den Pfad bei Bedarf an
 
 const Header = () => {
   // Die Funktion für className sorgt dafür, dass React Router v6 die 'active' Klasse korrekt setzt
