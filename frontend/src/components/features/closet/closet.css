@@ -17,13 +17,3 @@
   transform: translate(2px, 2px);
   box-shadow: 2px 2px 0px var(--border-color);
 }
-
-.footer-bar {
-  border-top: 1px solid var(--border-color);
-  padding: 10px 2rem;
-  font-size: 12px;
-  display: flex;
-  gap: 2rem;
-  background-color: var(--bg-paper);
-  flex-shrink: 0;
-}
