@@ -1,5 +1,7 @@
 import React, { useState, useEffect } from "react";
 import "../App.css";
+import GalleryHeader from "../components/pages/gallery/GalleryHeader";
+import GalleryGrid from "../components/pages/gallery/GalleryGrid";
 
 const Gallery = () => {
   const [looks, setLooks] = useState([]);
@@ -35,50 +37,8 @@ const Gallery = () => {
 
   return (
     <div className="gallery-page-container">
-      {/* HEADER: Zurück zum Original-Font, aber kompakt */}
-      <div className="gallery-header-clean">
-        <h1 className="hero-text" style={{ fontSize: "2rem", margin: 0 }}>
-          THE LOOKBOOK.
-        </h1>
-        <div className="status-pill">ASSETS: {looks.length}</div>
-      </div>
-
-      <div className="gallery-grid-compact">
-        {loading ? (
-          <div className="brutalist-loader-box">INITIALIZING...</div>
-        ) : looks.length > 0 ? (
-          looks.map((look) => (
-            <div key={look.id} className="neo-album-card">
-              <button
-                className="delete-btn-top"
-                onClick={() => handleDelete(look.id)}
-              >
-                ✕
-              </button>
-
-              <div className="neo-img-frame">
-                <img src={look.url} alt="Look" />
-              </div>
-
-              <div className="neo-card-footer-mustard">
-                <span className="asset-id-text">
-                  ID_{look.id.split("_").pop().substring(0, 6)}
-                </span>
-                <button
-                  className="expand-link-btn"
-                  onClick={() => window.open(look.url, "_blank")}
-                >
-                  VIEW
-                </button>
-              </div>
-            </div>
-          ))
-        ) : (
-          <div className="empty-state">
-            <h2>ARCHIVE_EMPTY</h2>
-          </div>
-        )}
-      </div>
+      <GalleryHeader assetCount={looks.length} />
+      <GalleryGrid loading={loading} looks={looks} onDelete={handleDelete} />
     </div>
   );
 };
