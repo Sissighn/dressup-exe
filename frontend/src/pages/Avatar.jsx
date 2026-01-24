@@ -1,6 +1,8 @@
 import React, { useState, useEffect, useRef } from "react";
 import { useNavigate } from "react-router-dom";
 import "../App.css";
+import BiometricsForm from "../components/pages/avatar/BiometricsForm";
+import FaceScanUpload from "../components/pages/avatar/FaceScanUpload";
 
 const Avatar = () => {
   const navigate = useNavigate();
@@ -99,225 +101,21 @@ const Avatar = () => {
       <div
         style={{ display: "grid", gridTemplateColumns: "1fr 1fr", gap: "4rem" }}
       >
-        {/* Formular Section */}
-        <div className="form-section">
-          <h3
-            style={{
-              borderBottom: "1px solid black",
-              paddingBottom: "10px",
-              marginBottom: "20px",
-            }}
-          >
-            01 / BIOMETRICS
-          </h3>
+        <BiometricsForm formData={formData} onInputChange={handleInputChange} />
 
-          <div
-            style={{
-              display: "grid",
-              gridTemplateColumns: "1fr 1fr",
-              gap: "20px",
-              marginBottom: "15px",
-            }}
-          >
-            <div className="input-group">
-              <label
-                style={{
-                  display: "block",
-                  fontSize: "12px",
-                  fontWeight: "bold",
-                  marginBottom: "5px",
-                }}
-              >
-                DISPLAY NAME
-              </label>
-              <input
-                type="text"
-                name="name"
-                value={formData.name}
-                onChange={handleInputChange}
-                placeholder="ENTER NAME"
-                style={{
-                  width: "100%",
-                  padding: "10px",
-                  border: "1px solid black",
-                }}
-              />
-            </div>
-
-            {/* NEU: GENDER SELECTION */}
-            <div className="input-group">
-              <label
-                style={{
-                  display: "block",
-                  fontSize: "12px",
-                  fontWeight: "bold",
-                  marginBottom: "5px",
-                }}
-              >
-                GENDER
-              </label>
-              <select
-                name="gender"
-                value={formData.gender}
-                onChange={handleInputChange}
-                style={{
-                  width: "100%",
-                  padding: "10px",
-                  border: "1px solid black",
-                  borderRadius: 0,
-                  height: "41px",
-                }}
-              >
-                <option value="FEMALE">FEMALE</option>
-                <option value="MALE">MALE</option>
-              </select>
-            </div>
-          </div>
-
-          <div
-            style={{
-              display: "grid",
-              gridTemplateColumns: "1fr 1fr",
-              gap: "20px",
-            }}
-          >
-            <div className="input-group">
-              <label
-                style={{
-                  display: "block",
-                  fontSize: "12px",
-                  fontWeight: "bold",
-                  marginBottom: "5px",
-                }}
-              >
-                HEIGHT (CM)
-              </label>
-              <input
-                type="number"
-                name="height"
-                value={formData.height}
-                onChange={handleInputChange}
-                placeholder="175"
-                style={{
-                  width: "100%",
-                  padding: "10px",
-                  border: "1px solid black",
-                }}
-              />
-            </div>
-            <div className="input-group">
-              <label
-                style={{
-                  display: "block",
-                  fontSize: "12px",
-                  fontWeight: "bold",
-                  marginBottom: "5px",
-                }}
-              >
-                WEIGHT (KG)
-              </label>
-              <input
-                type="number"
-                name="weight"
-                value={formData.weight}
-                onChange={handleInputChange}
-                placeholder="65"
-                style={{
-                  width: "100%",
-                  padding: "10px",
-                  border: "1px solid black",
-                }}
-              />
-            </div>
-          </div>
-
-          <div className="input-group" style={{ marginTop: "15px" }}>
-            <label
-              style={{
-                display: "block",
-                fontSize: "12px",
-                fontWeight: "bold",
-                marginBottom: "5px",
-              }}
-            >
-              BODY TYPE
-            </label>
-            <select
-              name="bodyType"
-              value={formData.bodyType}
-              onChange={handleInputChange}
-              style={{
-                width: "100%",
-                padding: "10px",
-                border: "1px solid black",
-                borderRadius: 0,
-              }}
-            >
-              <option value="ATHLETIC">ATHLETIC</option>
-              <option value="SLIM">SLIM</option>
-              <option value="CURVY">CURVY</option>
-              <option value="RECTANGULAR">RECTANGULAR</option>
-            </select>
-          </div>
-        </div>
-
-        {/* Upload Section */}
-        <div className="upload-section">
-          <h3
-            style={{
-              borderBottom: "1px solid black",
-              paddingBottom: "10px",
-              marginBottom: "20px",
-            }}
-          >
-            02 / FACE SCAN
-          </h3>
-          <input
-            type="file"
-            ref={faceInputRef}
-            style={{ display: "none" }}
-            onChange={handleFileChange}
-            accept="image/*"
-          />
-
-          <div
-            className="upload-box"
-            onClick={() => faceInputRef.current.click()}
-            style={{
-              border: "1px dashed black",
-              height: "200px",
-              display: "flex",
-              alignItems: "center",
-              justifyContent: "center",
-              cursor: "pointer",
-              background: "#fff",
-            }}
-          >
-            {faceImage ? (
-              <img
-                src={faceImage}
-                alt="Preview"
-                style={{ height: "100%", width: "100%", objectFit: "cover" }}
-              />
-            ) : (
-              <p>CLICK TO UPLOAD FACE</p>
-            )}
-          </div>
-
-          <button
-            onClick={handleGenerate}
-            className="action-button"
-            style={{
-              width: "100%",
-              marginTop: "30px",
-              background: isProcessing ? "grey" : "var(--text-main)",
-              color: "white",
-            }}
-            disabled={isProcessing}
-          >
-            {isProcessing ? "GENERATING TWIN..." : "GENERATE AVATAR"}
-          </button>
-        </div>
+        <FaceScanUpload
+          faceImage={faceImage}
+          isProcessing={isProcessing}
+          onUploadClick={() => faceInputRef.current.click()}
+          onGenerate={handleGenerate}
+        />
+        <input
+          type="file"
+          ref={faceInputRef}
+          style={{ display: "none" }}
+          onChange={handleFileChange}
+          accept="image/*"
+        />
       </div>
     </div>
   );
