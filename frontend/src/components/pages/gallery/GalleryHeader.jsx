@@ -1,12 +1,11 @@
 import React from "react";
+import styles from "./GalleryHeader.module.css";
 
 const GalleryHeader = ({ assetCount }) => {
   return (
-    <div className="gallery-header-clean">
-      <h1 className="hero-text" style={{ fontSize: "2rem", margin: 0 }}>
-        THE LOOKBOOK.
-      </h1>
-      <div className="status-pill">ASSETS: {assetCount}</div>
+    <div className={styles.header}>
+      <h1 className={styles.title}>THE LOOKBOOK.</h1>
+      <div className={styles.statusPill}>ASSETS: {assetCount}</div>
     </div>
   );
 };

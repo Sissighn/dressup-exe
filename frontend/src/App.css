@@ -327,33 +327,12 @@ html,
 
 /* --- CLEAN LOOKBOOK STYLES --- */
 
-.gallery-header-clean {
-  padding: 1rem 2rem;
-  background: white;
-  border-bottom: 2px solid var(--soft-black);
-  display: flex;
-  justify-content: space-between;
-  align-items: center;
-  position: sticky;
-  top: 0;
-  z-index: 100;
-}
-
 .hero-text-small {
   font-family: "Courier New", Courier, monospace;
   font-weight: 900;
   font-size: 1.8rem;
   margin: 0;
   color: var(--soft-black);
-}
-
-.status-pill {
-  background: var(--accent-yellow);
-  border: 2px solid var(--soft-black);
-  padding: 4px 12px;
-  font-weight: 900;
-  font-size: 0.7rem;
-  box-shadow: 3px 3px 0px var(--soft-black);
 }
 
 .gallery-grid-compact {
