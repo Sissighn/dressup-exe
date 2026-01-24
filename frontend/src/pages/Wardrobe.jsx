@@ -1,6 +1,9 @@
 import { useState, useEffect } from "react";
 import { useNavigate } from "react-router-dom";
 import "../App.css";
+import WardrobeActions from "../components/pages/wardrobe/WardrobeActions";
+import AvatarDisplay from "../components/pages/wardrobe/AvatarDisplay";
+import ClothingSelector from "../components/pages/wardrobe/ClothingSelector";
 
 const Wardrobe = () => {
   const navigate = useNavigate();
@@ -29,11 +32,21 @@ const Wardrobe = () => {
 
   // --- SYNC: Änderungen im localStorage speichern ---
   useEffect(() => {
-    if (selectedTop)
+    if (selectedTop) {
       localStorage.setItem("selectedTop", JSON.stringify(selectedTop));
-    if (selectedBottom)
+    } else {
+      localStorage.removeItem("selectedTop");
+    }
+    if (selectedBottom) {
       localStorage.setItem("selectedBottom", JSON.stringify(selectedBottom));
-    if (dressedAvatar) localStorage.setItem("dressedAvatar", dressedAvatar);
+    } else {
+      localStorage.removeItem("selectedBottom");
+    }
+    if (dressedAvatar) {
+      localStorage.setItem("dressedAvatar", dressedAvatar);
+    } else {
+      localStorage.removeItem("dressedAvatar");
+    }
   }, [selectedTop, selectedBottom, dressedAvatar]);
 
   // Avatar und Kleidung beim Laden initialisieren
@@ -81,7 +94,6 @@ const Wardrobe = () => {
 
     setIsGenerating(true);
     setDressedAvatar(null);
-    localStorage.removeItem("dressedAvatar");
 
     try {
       const fetchBlob = async (url) => {
@@ -109,7 +121,6 @@ const Wardrobe = () => {
         const result = await response.json();
         const newUrl = `${result.outfit_url}?t=${Date.now()}`;
         setDressedAvatar(newUrl);
-        localStorage.setItem("dressedAvatar", newUrl);
       } else {
         const error = await response.json();
         alert(`AI Error: ${error.detail || "Failed to generate outfit"}`);
@@ -127,9 +138,6 @@ const Wardrobe = () => {
     setDressedAvatar(null);
     setSelectedTop(null);
     setSelectedBottom(null);
-    localStorage.removeItem("dressedAvatar");
-    localStorage.removeItem("selectedTop");
-    localStorage.removeItem("selectedBottom");
   };
 
   const handleDownload = async () => {
@@ -150,255 +158,63 @@ const Wardrobe = () => {
     }
   };
 
+  const handleArchive = async () => {
+    if (!dressedAvatar) return;
+    try {
+      const response = await fetch("http://localhost:8000/archive-look", {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({ outfit_url: dressedAvatar }),
+      });
+      if (response.ok) alert("LOOK SAVED TO DIGITAL ARCHIVE!");
+      else alert("FAILED TO ARCHIVE LOOK.");
+    } catch (error) {
+      console.error("Archive error:", error);
+    }
+  };
+
   const displayImage = dressedAvatar || userAvatar;
 
   return (
     <div className="main-content">
-      <div
-        className="left-panel"
-        style={{ maxHeight: "100vh", overflowY: "auto", paddingBottom: "20px" }}
-      >
-        <h1 className="hero-text" style={{ fontSize: "2.8rem" }}>
-          Where style <br /> becomes <br /> <i>identity.</i>
-        </h1>
-        <p className="sub-text">
-          Digital Twin Active. <br /> Curate your digital appearance.
-        </p>
+      <WardrobeActions
+        isGenerating={isGenerating}
+        dressedAvatar={dressedAvatar}
+        selectedTop={selectedTop}
+        selectedBottom={selectedBottom}
+        onTryOn={handleTryOn}
+        onDownload={handleDownload}
+        onArchive={handleArchive}
+        onReset={handleReset}
+        onRescan={() => navigate("/avatar")}
+      />
 
-        <div
-          style={{
-            marginTop: "30px",
-            display: "flex",
-            flexDirection: "column",
-            gap: "8px",
-          }}
-        >
-          <button
-            className="action-button"
-            onClick={handleTryOn}
-            disabled={!selectedTop || !selectedBottom || isGenerating}
-            style={{
-              background:
-                !selectedTop || !selectedBottom || isGenerating
-                  ? "#ccc"
-                  : "black",
-              color: "white",
-              padding: "10px",
-              fontSize: "12px",
-              cursor: isGenerating ? "not-allowed" : "pointer",
-            }}
-          >
-            {isGenerating ? "AI GENERATING..." : "TRY THE COMBI ON"}
-          </button>
-
-          {dressedAvatar && (
-            <>
-              <button
-                className="action-button"
-                onClick={handleDownload}
-                style={{
-                  background: "var(--accent-yellow)",
-                  color: "black",
-                  border: "2px solid black",
-                  fontWeight: "bold",
-                  padding: "10px",
-                  fontSize: "12px",
-                }}
-              >
-                💾 SAVE LOOK (.PNG)
-              </button>
-
-              <button
-                className="action-button"
-                onClick={async () => {
-                  try {
-                    const response = await fetch(
-                      "http://localhost:8000/archive-look",
-                      {
-                        method: "POST",
-                        headers: { "Content-Type": "application/json" },
-                        body: JSON.stringify({ outfit_url: dressedAvatar }),
-                      }
-                    );
-                    if (response.ok) alert("LOOK SAVED TO DIGITAL ARCHIVE!");
-                    else alert("FAILED TO ARCHIVE LOOK.");
-                  } catch (error) {
-                    console.error("Archive error:", error);
-                  }
-                }}
-                style={{
-                  background: "white",
-                  color: "black",
-                  border: "2px solid black",
-                  fontWeight: "bold",
-                  padding: "10px",
-                  fontSize: "12px",
-                  boxShadow: "4px 4px 0px black",
-                }}
-              >
-                🗄️ ARCHIVE LOOK
-              </button>
-
-              <button
-                className="action-button"
-                onClick={handleReset}
-                style={{
-                  background: "transparent",
-                  color: "black",
-                  border: "1px solid black",
-                  padding: "10px",
-                  fontSize: "12px",
-                }}
-              >
-                RESET TO ORIGINAL
-              </button>
-            </>
-          )}
-
-          <button
-            className="action-button"
-            onClick={() => navigate("/avatar")}
-            style={{
-              marginTop: "5px",
-              fontSize: "11px",
-              background: "transparent",
-              border: "1px solid black",
-              padding: "8px",
-            }}
-          >
-            RE-SCAN MODEL
-          </button>
-        </div>
-      </div>
-
-      <div className="center-panel">
-        {isGenerating ? (
-          <div className="brutalist-loader-box">
-            <div className="brutalist-loader-text">
-              PROCESSING<span className="blink-block"></span>
-            </div>
-            <div className="loader-status-line">
-              {" >"} TOP_ID: {selectedTop?.id}
-            </div>
-            <div className="loader-status-line">
-              {" >"} BTM_ID: {selectedBottom?.id}
-            </div>
-            <div className="loader-status-line">{" >"} STITCHING...</div>
-          </div>
-        ) : displayImage ? (
-          <img
-            src={displayImage}
-            alt="Digital Twin"
-            className="avatar-image-display"
-            style={{
-              height: "95%",
-              width: "auto",
-              objectFit: "contain",
-              filter: "drop-shadow(0px 10px 20px rgba(0,0,0,0.3))",
-            }}
-          />
-        ) : (
-          <div style={{ opacity: 0.3, textAlign: "center" }}>
-            <h2>NO MODEL FOUND</h2>
-          </div>
-        )}
-      </div>
+      <AvatarDisplay
+        isGenerating={isGenerating}
+        displayImage={displayImage}
+        selectedTop={selectedTop}
+        selectedBottom={selectedBottom}
+      />
 
       <div className="right-panel">
-        <div className="clothing-section">
-          <span className="section-label">TOPS</span>
-          <button onClick={prevTop} className="nav-arrow left">
-            &lt;
-          </button>
-          {currentTop ? (
-            <div style={{ textAlign: "center" }}>
-              <img
-                src={currentTop.image_path}
-                alt={currentTop.name}
-                style={{ height: "120px", objectFit: "contain" }}
-              />
-              <p
-                style={{
-                  fontSize: "10px",
-                  fontWeight: "bold",
-                  marginTop: "5px",
-                }}
-              >
-                {currentTop.name}
-              </p>
-              <button
-                onClick={() => setSelectedTop(currentTop)}
-                style={{
-                  fontSize: "10px",
-                  marginTop: "5px",
-                  padding: "5px 12px",
-                  cursor: "pointer",
-                  background:
-                    selectedTop?.id === currentTop.id ? "black" : "white",
-                  color: selectedTop?.id === currentTop.id ? "white" : "black",
-                  border: "1px solid black",
-                }}
-              >
-                {selectedTop?.id === currentTop.id ? "SELECTED" : "SELECT"}
-              </button>
-            </div>
-          ) : (
-            <p style={{ opacity: 0.4, fontSize: "10px" }}>NO TOPS IN CLOSET</p>
-          )}
-          <button onClick={nextTop} className="nav-arrow right">
-            &gt;
-          </button>
-        </div>
-
-        <div className="clothing-section">
-          <span className="section-label">BOTTOMS</span>
-          <button onClick={prevBottom} className="nav-arrow left">
-            &lt;
-          </button>
-          {currentBottom ? (
-            <div style={{ textAlign: "center" }}>
-              <img
-                src={currentBottom.image_path}
-                alt={currentBottom.name}
-                style={{ height: "120px", objectFit: "contain" }}
-              />
-              <p
-                style={{
-                  fontSize: "10px",
-                  fontWeight: "bold",
-                  marginTop: "5px",
-                }}
-              >
-                {currentBottom.name}
-              </p>
-              <button
-                onClick={() => setSelectedBottom(currentBottom)}
-                style={{
-                  fontSize: "10px",
-                  marginTop: "5px",
-                  padding: "5px 12px",
-                  cursor: "pointer",
-                  background:
-                    selectedBottom?.id === currentBottom.id ? "black" : "white",
-                  color:
-                    selectedBottom?.id === currentBottom.id ? "white" : "black",
-                  border: "1px solid black",
-                }}
-              >
-                {selectedBottom?.id === currentBottom.id
-                  ? "SELECTED"
-                  : "SELECT"}
-              </button>
-            </div>
-          ) : (
-            <p style={{ opacity: 0.4, fontSize: "10px" }}>
-              NO BOTTOMS IN CLOSET
-            </p>
-          )}
-          <button onClick={nextBottom} className="nav-arrow right">
-            &gt;
-          </button>
-        </div>
+        <ClothingSelector
+          label="TOPS"
+          items={tops}
+          currentItem={currentTop}
+          selectedItem={selectedTop}
+          onPrev={prevTop}
+          onNext={nextTop}
+          onSelect={setSelectedTop}
+        />
+        <ClothingSelector
+          label="BOTTOMS"
+          items={bottoms}
+          currentItem={currentBottom}
+          selectedItem={selectedBottom}
+          onPrev={prevBottom}
+          onNext={nextBottom}
+          onSelect={setSelectedBottom}
+        />
       </div>
     </div>
   );
