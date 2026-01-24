@@ -1,9 +1,10 @@
 import { useState, useEffect } from "react";
 import { useNavigate } from "react-router-dom";
 import "../App.css";
-import WardrobeActions from "../components/pages/wardrobe/WardrobeActions";
-import AvatarDisplay from "../components/pages/wardrobe/AvatarDisplay";
-import ClothingSelector from "../components/pages/wardrobe/ClothingSelector";
+import "../components/features/wardrobe/wardrobe.css";
+import WardrobeActions from "../components/features/wardrobe/WardrobeActions";
+import AvatarDisplay from "../components/features/wardrobe/AvatarDisplay";
+import ClothingSelector from "../components/features/wardrobe/ClothingSelector";
 
 const Wardrobe = () => {
   const navigate = useNavigate();

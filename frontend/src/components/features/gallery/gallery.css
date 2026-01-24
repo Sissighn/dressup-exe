@@ -1,0 +1,116 @@
+/* --- TAVUS-STYLE GALLERY --- */
+
+.gallery-page-container {
+  display: block;
+  min-height: 100vh;
+  background-color: #f9f9f7; /* Off-White Hintergrund */
+  background-image:
+    linear-gradient(var(--grid-color) 1px, transparent 1px),
+    linear-gradient(90deg, var(--grid-color) 1px, transparent 1px);
+  background-size: 30px 30px; /* Kleineres, feineres Raster */
+}
+
+/* --- CLEAN LOOKBOOK STYLES --- */
+
+.hero-text-small {
+  font-family: "Courier New", Courier, monospace;
+  font-weight: 900;
+  font-size: 1.8rem;
+  margin: 0;
+  color: var(--soft-black);
+}
+
+.gallery-grid-compact {
+  display: grid;
+  grid-template-columns: repeat(
+    auto-fill,
+    minmax(180px, 1fr)
+  ); /* Kleinere Karten */
+  gap: 35px;
+  padding: 3rem 2rem;
+}
+
+/* --- NEO-ALBUM CARD: TAVUS EDITION --- */
+
+.neo-album-card {
+  background: white;
+  border: 2px solid var(--soft-black);
+  box-shadow: 8px 8px 0px var(--soft-black);
+  padding: 8px;
+  position: relative;
+  transition: transform 0.2s ease;
+}
+
+.neo-album-card:hover {
+  transform: translate(-2px, -2px);
+  box-shadow: 10px 10px 0px var(--accent-yellow);
+}
+
+.neo-img-frame {
+  border: 2px solid var(--soft-black);
+  height: 250px; /* Kompakteres Format */
+  overflow: hidden;
+}
+
+.neo-img-frame img {
+  width: 100%;
+  height: 100%;
+  object-fit: cover;
+}
+
+.delete-btn-top {
+  position: absolute;
+  top: -10px;
+  right: -10px;
+  width: 28px;
+  height: 28px;
+  background: var(--soft-black);
+  color: white;
+  border: 2px solid white;
+  font-weight: bold;
+  cursor: pointer;
+  z-index: 10;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+}
+
+.text-link-btn {
+  background: white;
+  border: 1px solid var(--soft-black);
+  padding: 2px 6px;
+  font-size: 0.6rem;
+  font-weight: 900;
+  cursor: pointer;
+}
+
+.neo-card-footer {
+  margin-top: 10px;
+  background: var(--accent-yellow); /* Senfgelber Balken */
+  border: 2px solid black;
+  padding: 5px 10px;
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  font-family: monospace;
+  font-weight: bold;
+}
+
+.delete-x-btn {
+  position: absolute;
+  top: -15px;
+  right: -15px;
+  width: 32px;
+  height: 32px;
+  background: black;
+  color: white;
+  border: 3px solid white;
+  font-weight: bold;
+  cursor: pointer;
+  box-shadow: 3px 3px 0px var(--accent-yellow);
+  z-index: 10;
+}
+
+.delete-x-btn:hover {
+  background: #ff4444;
+}

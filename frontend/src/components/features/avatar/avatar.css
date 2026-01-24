@@ -1,0 +1,15 @@
+/* --- Upload / Form Styles (Avatar Page) --- */
+.form-section,
+.upload-section {
+  background: white;
+  padding: 20px;
+  border: 1px solid var(--border-color);
+  box-shadow: 4px 4px 0px var(--border-color);
+}
+
+.upload-box {
+  transition: background 0.2s;
+}
+.upload-box:hover {
+  background: #f9f9f9 !important;
+}

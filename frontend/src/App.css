@@ -1,11 +1,11 @@
 :root {
-  /* Farbpalette */
+  /* Colors */
   --bg-paper: #f3f2ef;
   --accent-yellow: #e8d489;
   --accent-pink: #e6b8b8;
   --text-main: #1a1a1a;
   --border-color: #1a1a1a;
-  --grid-color: rgba(0, 0, 0, 0.05); /* Sehr dezentes Raster */
+  --grid-color: rgba(0, 0, 0, 0.05);
   --soft-black: #1a1a1a;
 
   /* Fonts */
@@ -13,7 +13,6 @@
   --font-sans: "Inter", sans-serif;
 }
 
-/* --- Global Reset & Window Settings --- */
 body,
 html,
 #root {
@@ -25,135 +24,16 @@ html,
   color: var(--text-main);
   font-family: var(--font-sans);
 
-  /* Spotify-Style: Mindestgröße erzwingen, damit Layout nicht bricht */
   min-width: 1100px;
   min-height: 700px;
   overflow: auto;
 }
 
-.app-container {
-  height: 100vh;
-  display: flex;
-  flex-direction: column;
-  border: 1px solid var(--border-color);
-  box-sizing: border-box;
-}
-
-/* --- Main 3-Column Grid Layout --- */
-.main-content {
-  display: grid;
-  /* 25% Intro | 40% Avatar | 35% Kleidung */
-  grid-template-columns: 27% 43% 30%;
-  flex-grow: 1;
-  overflow: hidden; /* Wichtig: Scrollen nur innerhalb der Panels wenn nötig */
-}
-
-/* 1. Linke Spalte: Intro */
-.left-panel {
-  padding: 2rem;
-  display: flex;
-  flex-direction: column;
-  justify-content: center;
-  border-right: 1px solid var(--border-color);
-  background-color: var(--accent-yellow);
-  position: relative;
-  z-index: 2;
-}
-
-.hero-text {
-  font-family: var(--font-serif);
-  font-size: 3.5rem; /* Etwas kleiner damit es gut passt */
-  line-height: 1.1;
-  margin-bottom: 1rem;
-  font-weight: 400;
-}
-
-.sub-text {
-  font-size: 1.1rem;
-  opacity: 0.8;
-  max-width: 400px;
-  line-height: 1.5;
-}
-
-/* 2. Mittlere Spalte: Avatar Stage */
-.center-panel {
-  background-color: #f0f0f0; /* Studio Grau */
-  display: flex;
-  align-items: flex-end; /* Avatar steht unten */
-  justify-content: center;
-  border-right: 1px solid var(--border-color);
-  position: relative;
-  overflow: hidden;
-}
-
-/* 3. Rechte Spalte: Kleidung (Split View) */
-.right-panel {
-  display: flex;
-  flex-direction: column; /* Stapelt Tops und Bottoms */
-  background-color: #fff;
-}
-
-.clothing-section {
-  flex: 1; /* Nimmt 50% der Höhe */
-  border-bottom: 1px solid var(--border-color);
-  position: relative;
-  display: flex;
-  align-items: center;
-  justify-content: center;
-  overflow: hidden;
-}
-
-.clothing-section:last-child {
-  border-bottom: none;
-}
-
-.section-label {
-  position: absolute;
-  top: 10px;
-  left: 10px;
-  font-size: 10px;
-  font-weight: bold;
-  letter-spacing: 1px;
-  z-index: 10;
-  background: white;
-  padding: 2px 5px;
-  border: 1px solid black;
-}
-
-/* --- Navigation Arrows (Für Kleidung) --- */
-.nav-arrow {
-  background: transparent;
-  border: 1px solid var(--border-color);
-  font-family: monospace;
-  font-size: 1.2rem;
-  cursor: pointer;
-  padding: 5px 10px;
-  position: absolute;
-  top: 50%;
-  transform: translateY(-50%);
-  z-index: 20;
-  background: white;
-  transition: background 0.2s;
-}
-
-.nav-arrow:hover {
-  background: var(--accent-yellow);
-}
-
-.nav-arrow.left {
-  left: 20px;
-}
-
-.nav-arrow.right {
-  right: 20px;
-}
-
-/* --- Buttons & Footer --- */
 .action-button {
   margin-top: 2rem;
   padding: 1rem 2rem;
   background: transparent;
-  border: 1px solid var(--border-color);
+  border: 4px solid var(--border-color);
   font-family: var(--font-sans);
   text-transform: uppercase;
   font-weight: 600;
@@ -179,23 +59,7 @@ html,
   flex-shrink: 0;
 }
 
-/* --- Upload / Form Styles (Avatar Page) --- */
-.form-section,
-.upload-section {
-  background: white;
-  padding: 20px;
-  border: 1px solid var(--border-color);
-  box-shadow: 4px 4px 0px var(--border-color);
-}
-
-.upload-box {
-  transition: background 0.2s;
-}
-.upload-box:hover {
-  background: #f9f9f9 !important;
-}
-
-/* --- NEO-BRUTALIST LOADER --- */
+/* --- LOADER --- */
 .brutalist-loader-box {
   background: var(--accent-yellow);
   border: 3px solid black;
@@ -238,21 +102,20 @@ html,
   font-weight: bold;
 }
 
-/* --- LAYOUT FIX FÜR DAS BILD --- */
 .center-panel {
   display: flex;
   align-items: center;
   justify-content: center;
   height: 100%;
-  overflow: hidden; /* Verhindert Scrollen bei Zoom-Fehlern */
+  overflow: hidden;
 }
 
 .avatar-image-display {
-  max-height: 95%; /* Begrenzt die Höhe auf das Panel */
-  max-width: 95%; /* Begrenzt die Breite auf das Panel */
+  max-height: 95%;
+  max-width: 95%;
   width: auto;
   height: auto;
-  object-fit: contain; /* Erhält das Seitenverhältnis ohne Verzerrung */
+  object-fit: contain;
   filter: drop-shadow(0px 10px 20px rgba(0, 0, 0, 0.3));
 }
 
@@ -262,186 +125,4 @@ html,
   padding: 5px 12px;
   cursor: pointer;
   border: 1px solid black;
-}
-
-/* --- TAVUS-STYLE GALLERY --- */
-
-.gallery-page-container {
-  display: block;
-  min-height: 100vh;
-  background-color: #f9f9f7; /* Off-White Hintergrund */
-  background-image:
-    linear-gradient(var(--grid-color) 1px, transparent 1px),
-    linear-gradient(90deg, var(--grid-color) 1px, transparent 1px);
-  background-size: 30px 30px; /* Kleineres, feineres Raster */
-}
-
-/* --- CLEAN LOOKBOOK STYLES --- */
-
-.hero-text-small {
-  font-family: "Courier New", Courier, monospace;
-  font-weight: 900;
-  font-size: 1.8rem;
-  margin: 0;
-  color: var(--soft-black);
-}
-
-.gallery-grid-compact {
-  display: grid;
-  grid-template-columns: repeat(
-    auto-fill,
-    minmax(180px, 1fr)
-  ); /* Kleinere Karten */
-  gap: 35px;
-  padding: 3rem 2rem;
-}
-
-/* --- NEO-ALBUM CARD: TAVUS EDITION --- */
-
-.neo-album-card {
-  background: white;
-  border: 2px solid var(--soft-black);
-  box-shadow: 8px 8px 0px var(--soft-black);
-  padding: 8px;
-  position: relative;
-  transition: transform 0.2s ease;
-}
-
-.neo-album-card:hover {
-  transform: translate(-2px, -2px);
-  box-shadow: 10px 10px 0px var(--accent-yellow);
-}
-
-.neo-img-frame {
-  border: 2px solid var(--soft-black);
-  height: 250px; /* Kompakteres Format */
-  overflow: hidden;
-}
-
-.neo-img-frame img {
-  width: 100%;
-  height: 100%;
-  object-fit: cover;
-}
-
-.delete-btn-top {
-  position: absolute;
-  top: -10px;
-  right: -10px;
-  width: 28px;
-  height: 28px;
-  background: var(--soft-black);
-  color: white;
-  border: 2px solid white;
-  font-weight: bold;
-  cursor: pointer;
-  z-index: 10;
-  display: flex;
-  align-items: center;
-  justify-content: center;
-}
-
-.text-link-btn {
-  background: white;
-  border: 1px solid var(--soft-black);
-  padding: 2px 6px;
-  font-size: 0.6rem;
-  font-weight: 900;
-  cursor: pointer;
-}
-
-.neo-card-footer {
-  margin-top: 10px;
-  background: var(--accent-yellow); /* Senfgelber Balken */
-  border: 2px solid black;
-  padding: 5px 10px;
-  display: flex;
-  justify-content: space-between;
-  align-items: center;
-  font-family: monospace;
-  font-weight: bold;
-}
-
-.delete-x-btn {
-  position: absolute;
-  top: -15px;
-  right: -15px;
-  width: 32px;
-  height: 32px;
-  background: black;
-  color: white;
-  border: 3px solid white;
-  font-weight: bold;
-  cursor: pointer;
-  box-shadow: 3px 3px 0px var(--accent-yellow);
-  z-index: 10;
-}
-
-.delete-x-btn:hover {
-  background: #ff4444;
-}
-
-/* About Page Specifics */
-.about-page {
-  padding: 4rem;
-  background-image: radial-gradient(
-    #000 0.5px,
-    transparent 0.5px
-  ); /* Punkt-Raster Hintergrund */
-  background-size: 20px 20px;
-}
-
-.about-header-section {
-  display: flex;
-  justify-content: space-between;
-  align-items: flex-start;
-  margin-bottom: 4rem;
-}
-
-.brutalist-badge {
-  background: black;
-  color: var(--accent-yellow);
-  padding: 10px 20px;
-  font-weight: 900;
-  border: 3px solid black;
-  box-shadow: 6px 6px 0px #f3d45c;
-  transform: rotate(3deg);
-}
-
-.about-grid {
-  display: grid;
-  grid-template-columns: repeat(2, 1fr);
-  gap: 2rem;
-}
-
-.about-card {
-  background: white;
-  border: 4px solid black;
-  padding: 2rem;
-  box-shadow: 10px 10px 0px black; /* Iconic shadow */
-  transition: all 0.2s ease;
-}
-
-.about-card h3 {
-  font-size: 1.5rem;
-  margin-bottom: 1rem;
-  text-decoration: underline;
-}
-
-.about-card:hover {
-  transform: translate(-4px, -4px);
-  box-shadow: 14px 14px 0px black;
-}
-
-.main-card {
-  grid-column: span 2;
-  background: var(--accent-yellow);
-}
-
-.black-card {
-  background: black;
-}
-
-.highlight-card {
-  border-color: black;
 }

@@ -1,10 +1,10 @@
 import React, { useState, useEffect, useRef } from "react";
-import "../App.css";
-import ClosetHeader from "../components/pages/closet/ClosetHeader";
-import CategoryRow from "../components/pages/closet/CategoryRow";
-import DeleteItemModal from "../components/pages/closet/DeleteItemModal";
-import UploadModal from "../components/pages/closet/UploadModal";
-import StatusNotification from "../components/pages/closet/StatusNotification";
+import "../components/features/closet/closet.css";
+import ClosetHeader from "../components/features/closet/ClosetHeader";
+import CategoryRow from "../components/features/closet/CategoryRow";
+import DeleteItemModal from "../components/features/closet/DeleteItemModal";
+import UploadModal from "../components/features/closet/UploadModal";
+import StatusNotification from "../components/features/closet/StatusNotification";
 
 const CATEGORIES = ["TOPS", "BOTTOMS", "SHOES", "BAGS"];
 
@@ -50,7 +50,7 @@ const Closet = () => {
     const nameToUpload =
       uploadName || selectedFile.name.replace(/\.[^/.]+$/, "");
     formData.append("name", nameToUpload);
-    formData.append("category", modalUploadCategory);
+    formData.append("category", modalCategory);
 
     try {
       const response = await fetch("http://localhost:8000/upload-item", {

@@ -1,8 +1,8 @@
 import React, { useState, useEffect, useRef } from "react";
 import { useNavigate } from "react-router-dom";
-import "../App.css";
-import BiometricsForm from "../components/pages/avatar/BiometricsForm";
-import FaceScanUpload from "../components/pages/avatar/FaceScanUpload";
+import "../components/features/avatar/avatar.css";
+import BiometricsForm from "../components/features/avatar/BiometricsForm";
+import FaceScanUpload from "../components/features/avatar/FaceScanUpload";
 
 const Avatar = () => {
   const navigate = useNavigate();

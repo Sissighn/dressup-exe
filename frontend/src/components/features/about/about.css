@@ -1,0 +1,63 @@
+.about-page {
+  padding: 4rem;
+  background-image: radial-gradient(
+    #000 0.5px,
+    transparent 0.5px
+  ); /* Punkt-Raster Hintergrund */
+  background-size: 20px 20px;
+}
+
+.about-header-section {
+  display: flex;
+  justify-content: space-between;
+  align-items: flex-start;
+  margin-bottom: 4rem;
+}
+
+.brutalist-badge {
+  background: black;
+  color: var(--accent-yellow);
+  padding: 10px 20px;
+  font-weight: 900;
+  border: 3px solid black;
+  box-shadow: 6px 6px 0px #f3d45c;
+  transform: rotate(3deg);
+}
+
+.about-grid {
+  display: grid;
+  grid-template-columns: repeat(2, 1fr);
+  gap: 2rem;
+}
+
+.about-card {
+  background: white;
+  border: 4px solid black;
+  padding: 2rem;
+  box-shadow: 10px 10px 0px black; /* Iconic shadow */
+  transition: all 0.2s ease;
+}
+
+.about-card h3 {
+  font-size: 1.5rem;
+  margin-bottom: 1rem;
+  text-decoration: underline;
+}
+
+.about-card:hover {
+  transform: translate(-4px, -4px);
+  box-shadow: 14px 14px 0px black;
+}
+
+.main-card {
+  grid-column: span 2;
+  background: var(--accent-yellow);
+}
+
+.black-card {
+  background: black;
+}
+
+.highlight-card {
+  border-color: black;
+}

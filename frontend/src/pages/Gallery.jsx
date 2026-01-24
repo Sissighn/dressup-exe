@@ -1,7 +1,8 @@
 import React, { useState, useEffect } from "react";
 import "../App.css";
-import GalleryHeader from "../components/pages/gallery/GalleryHeader";
-import GalleryGrid from "../components/pages/gallery/GalleryGrid";
+import GalleryHeader from "../components/features/gallery/GalleryHeader";
+import GalleryGrid from "../components/features/gallery/GalleryGrid";
+import "../components/features/gallery/gallery.css";
 
 const Gallery = () => {
   const [looks, setLooks] = useState([]);

@@ -1,0 +1,116 @@
+.app-container {
+  height: 100vh;
+  display: flex;
+  flex-direction: column;
+  border: 1px solid var(--border-color);
+  box-sizing: border-box;
+}
+
+/* --- Main 3-Column Grid Layout --- */
+.main-content {
+  display: grid;
+  /* 25% Intro | 40% Avatar | 35% Kleidung */
+  grid-template-columns: 27% 43% 30%;
+  flex-grow: 1;
+  overflow: hidden; /* Wichtig: Scrollen nur innerhalb der Panels wenn nötig */
+}
+
+/* 1. Linke Spalte: Intro */
+.left-panel {
+  padding: 2rem;
+  display: flex;
+  flex-direction: column;
+  justify-content: center;
+  border-right: 1px solid var(--border-color);
+  background-color: var(--accent-yellow);
+  position: relative;
+  z-index: 2;
+}
+
+.hero-text {
+  font-family: var(--font-serif);
+  font-size: 3.5rem; /* Etwas kleiner damit es gut passt */
+  line-height: 1.1;
+  margin-bottom: 1rem;
+  font-weight: 400;
+}
+
+.sub-text {
+  font-size: 1.1rem;
+  opacity: 0.8;
+  max-width: 400px;
+  line-height: 1.5;
+}
+
+/* 2. Mittlere Spalte: Avatar Stage */
+.center-panel {
+  background-color: #f0f0f0; /* Studio Grau */
+  display: flex;
+  align-items: flex-end; /* Avatar steht unten */
+  justify-content: center;
+  border-right: 1px solid var(--border-color);
+  position: relative;
+  overflow: hidden;
+}
+
+/* 3. Rechte Spalte: Kleidung (Split View) */
+.right-panel {
+  display: flex;
+  flex-direction: column; /* Stapelt Tops und Bottoms */
+  background-color: #fff;
+}
+
+.clothing-section {
+  flex: 1; /* Nimmt 50% der Höhe */
+  border-bottom: 1px solid var(--border-color);
+  position: relative;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  overflow: hidden;
+}
+
+.clothing-section:last-child {
+  border-bottom: none;
+}
+
+.section-label {
+  position: absolute;
+  top: 10px;
+  left: 10px;
+  font-size: 10px;
+  font-weight: bold;
+  letter-spacing: 1px;
+  z-index: 10;
+  background: white;
+  padding: 2px 5px;
+  border: 1px solid black;
+}
+
+/* --- Navigation Arrows (Für Kleidung) --- */
+.nav-arrow {
+  background: transparent;
+  border: 1px solid var(--border-color);
+  font-family: monospace;
+  font-size: 1.2rem;
+  cursor: pointer;
+  padding: 5px 10px;
+  position: absolute;
+  top: 50%;
+  transform: translateY(-50%);
+  z-index: 20;
+  background: white;
+  transition: background 0.2s;
+}
+
+.nav-arrow:hover {
+  background: var(--accent-yellow);
+}
+
+.nav-arrow.left {
+  left: 20px;
+}
+
+.nav-arrow.right {
+  right: 20px;
+}
