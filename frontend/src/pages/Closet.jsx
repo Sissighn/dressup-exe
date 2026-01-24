@@ -3,8 +3,8 @@ import "../components/features/closet/closet.css";
 import ClosetHeader from "../components/features/closet/ClosetHeader/ClosetHeader";
 import CategoryRow from "../components/features/closet/CategoryRow/CategoryRow";
 import DeleteItemModal from "../components/features/closet/DeleteItemModal/DeleteItemModal";
-import UploadModal from "../components/features/closet/UploadModal";
-import StatusNotification from "../components/features/closet/StatusNotification";
+import UploadModal from "../components/features/closet/UploadModal/UploadModal";
+import StatusNotification from "../components/features/closet/StatusNotification/StatusNotification";
 
 const CATEGORIES = ["TOPS", "BOTTOMS", "SHOES", "BAGS"];
 

@@ -1,0 +1,66 @@
+.overlay {
+  position: fixed;
+  top: 0;
+  left: 0;
+  width: 100%;
+  height: 100%;
+  background: rgba(0, 0, 0, 0.8);
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  z-index: 1000;
+}
+
+.modal {
+  background: white;
+  padding: 2rem;
+  border: 4px solid black;
+  width: 400px;
+  text-align: center;
+  box-shadow: 12px 12px 0px black;
+}
+
+.title {
+  margin-top: 0;
+  border-bottom: 2px solid black;
+  padding-bottom: 10px;
+  text-align: left;
+}
+
+.preview {
+  max-width: 100%;
+  height: 220px;
+  object-fit: contain;
+  margin: 20px 0;
+  background: #f0f0f0;
+  border: 1px solid black;
+}
+
+.field {
+  margin: 20px 0;
+  text-align: left;
+}
+
+.label {
+  display: block;
+  font-size: 12px;
+  font-weight: bold;
+  margin-bottom: 5px;
+}
+
+.select {
+  width: 100%;
+  padding: 10px;
+  border: 2px solid black;
+  font-weight: bold;
+}
+
+.cancel {
+  width: 100%;
+  background: transparent;
+  border: none;
+  margin-top: 15px;
+  cursor: pointer;
+  text-decoration: underline;
+  font-weight: bold;
+}
