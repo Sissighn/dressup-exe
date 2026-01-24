@@ -130,10 +130,10 @@ async def try_gemini_outfit_generation(avatar_path, top_path, bottom_path):
 
         # Dein Original-Prompt
         prompt = (
-            "STRICT MANDATE: Generate ONLY a 9:16 portrait image (1080x1920). "
+            "STRICT MANDATE: Generate ONLY a 9:16 portrait image (1080x1920). Maintain the full-body framing."
             "Do not follow the aspect ratio of the input images if they are square. "
             "Maintain the exact full-body framing of IMAGE 1 but replace clothes. "
-            "The final image must be tall and vertical (portrait)."
+            "The final image must be tall and vertical (portrait) from head to toes."
         )
 
         response = client.models.generate_content(

@@ -7,20 +7,21 @@ const Closet = () => {
   const [uploadCategory, setUploadCategory] = useState("TOPS");
   const fileInputRef = useRef(null);
 
-  // State für das Pop-up-Fenster (Modal)
   const [isModalOpen, setIsModalOpen] = useState(false);
   const [selectedFile, setSelectedFile] = useState(null);
   const [previewImage, setPreviewImage] = useState(null);
   const [modalUploadCategory, setModalUploadCategory] = useState("TOPS");
 
-  // Daten vom Backend laden
+  const [statusMessage, setStatusMessage] = useState(null);
+  const [itemToDelete, setItemToDelete] = useState(null);
+
   const fetchCloset = async () => {
     try {
       const res = await fetch("http://localhost:8000/closet");
       const data = await res.json();
       setItems(data);
     } catch (e) {
-      console.error("Failed to load closet", e);
+      console.error("FAILED_TO_LOAD_CLOSET", e);
     }
   };
 
@@ -28,24 +29,16 @@ const Closet = () => {
     fetchCloset();
   }, []);
 
-  // 1. Öffnet das Modal nach der Dateiauswahl
   const handleFileSelect = (e) => {
     const file = e.target.files[0];
     if (!file) return;
-
     setSelectedFile(file);
     setPreviewImage(URL.createObjectURL(file));
-
-    // Modal-Felder mit Werten aus dem Header oder Dateinamen vorbefüllen
     setModalUploadCategory(uploadCategory);
-
     setIsModalOpen(true);
-
-    // Wichtig: Input zurücksetzen, damit dieselbe Datei erneut gewählt werden kann
     e.target.value = null;
   };
 
-  // 2. Führt den eigentlichen Upload aus dem Modal heraus aus
   const handleConfirmUpload = async () => {
     if (!selectedFile) return;
 
@@ -57,62 +50,51 @@ const Closet = () => {
     formData.append("category", modalUploadCategory);
 
     try {
-      await fetch("http://localhost:8000/upload-item", {
+      const response = await fetch("http://localhost:8000/upload-item", {
         method: "POST",
         body: formData,
       });
-      alert("ITEM ADDED TO DATABASE");
-      fetchCloset(); // Liste neu laden
 
-      // Modal schließen und alle relevanten States zurücksetzen
+      if (!response.ok) throw new Error("UPLOAD_FAILED");
+
+      fetchCloset();
       setIsModalOpen(false);
       setSelectedFile(null);
       setPreviewImage(null);
-      setUploadName(""); // Auch den Header-Input zurücksetzen
+      setUploadName("");
       setModalUploadCategory("TOPS");
     } catch (error) {
-      alert("UPLOAD FAILED");
+      console.error("UPLOAD_ERROR:", error);
+      setStatusMessage({
+        type: "error",
+        text: "UPLOAD FAILED. CHECK SYSTEM CONSOLE.",
+      });
     }
   };
 
-  // 3. Löscht ein Item
-  const handleDeleteItem = async (itemId) => {
-    if (!window.confirm("Möchten Sie dieses Item wirklich löschen?")) {
-      return;
-    }
-
+  const confirmDelete = async () => {
+    if (!itemToDelete) return;
     try {
       const response = await fetch(
-        `http://localhost:8000/delete-item/${itemId}`,
+        `http://localhost:8000/delete-item/${itemToDelete}`,
         {
           method: "DELETE",
-        }
+        },
       );
-
       if (response.ok) {
-        alert("ITEM GELÖSCHT");
-        fetchCloset(); // Liste neu laden
+        fetchCloset();
+        setItemToDelete(null);
       } else {
-        // Gib mehr Details aus, um das Debugging zu erleichtern
-        const errorText = await response.text();
-        console.error(
-          "Fehler vom Server beim Löschen:",
-          response.status,
-          errorText
-        );
-        alert(
-          `LÖSCHEN FEHLGESCHLAGEN. Server-Antwort: ${response.status}. Siehe Konsole für Details.`
-        );
+        setStatusMessage({
+          type: "error",
+          text: "SERVER ERROR: ACTION DENIED.",
+        });
       }
     } catch (error) {
-      console.error("Netzwerkfehler beim Löschen:", error);
-      alert(
-        "LÖSCHEN FEHLGESCHLAGEN. Verbindung zum Server fehlgeschlagen. Siehe Konsole für Details."
-      );
+      setStatusMessage({ type: "error", text: "CONNECTION INTERRUPTED." });
     }
   };
 
-  // Hilfsfunktion um Items nach Kategorie zu filtern
   const getCategoryItems = (cat) => items.filter((i) => i.category === cat);
 
   return (
@@ -120,7 +102,109 @@ const Closet = () => {
       className="main-content"
       style={{ display: "block", overflowY: "auto", padding: "0" }}
     >
-      {/* 1. UPLOAD AREA (Oben fixiert) */}
+      {/* ERROR NOTIFICATION */}
+      {statusMessage && statusMessage.type === "error" && (
+        <div
+          style={{
+            position: "fixed",
+            top: "100px",
+            right: "40px",
+            zIndex: 9999,
+            background: "#ff4d4d",
+            border: "4px solid black",
+            padding: "20px",
+            boxShadow: "8px 8px 0px black",
+            display: "flex",
+            alignItems: "center",
+            gap: "20px",
+          }}
+        >
+          <span style={{ fontWeight: "900", fontSize: "14px" }}>
+            ERROR: {statusMessage.text}
+          </span>
+          <button
+            onClick={() => setStatusMessage(null)}
+            style={{
+              background: "black",
+              color: "white",
+              border: "none",
+              padding: "8px 12px",
+              cursor: "pointer",
+              fontWeight: "bold",
+            }}
+          >
+            DISMISS
+          </button>
+        </div>
+      )}
+
+      {/* DELETE CONFIRMATION (Backdrop Click added) */}
+      {itemToDelete && (
+        <div
+          onClick={() => setItemToDelete(null)} // Schließt beim Klick irgendwohin
+          style={{
+            position: "fixed",
+            top: 0,
+            left: 0,
+            width: "100%",
+            height: "100%",
+            background: "rgba(0,0,0,0.8)",
+            display: "flex",
+            alignItems: "center",
+            justifyContent: "center",
+            zIndex: 2000,
+          }}
+        >
+          <div
+            onClick={(e) => e.stopPropagation()} // Verhindert Schließen beim Klick ins Fenster
+            style={{
+              background: "white",
+              padding: "2.5rem",
+              border: "4px solid black",
+              boxShadow: "12px 12px 0px #ff4d4d",
+              textAlign: "center",
+              maxWidth: "400px",
+            }}
+          >
+            <h2 style={{ marginTop: 0 }}>CONFIRM REMOVAL</h2>
+            <p style={{ margin: "20px 0", fontWeight: "bold" }}>
+              Are you sure you want to delete this item?
+            </p>
+            <div style={{ display: "flex", gap: "10px" }}>
+              <button
+                onClick={confirmDelete}
+                style={{
+                  flex: 1,
+                  background: "black",
+                  color: "white",
+                  padding: "12px",
+                  border: "none",
+                  fontWeight: "900",
+                  cursor: "pointer",
+                }}
+              >
+                Yes, delete
+              </button>
+              <button
+                onClick={() => setItemToDelete(null)}
+                style={{
+                  flex: 1,
+                  background: "white",
+                  color: "black",
+                  padding: "12px",
+                  border: "2px solid black",
+                  fontWeight: "900",
+                  cursor: "pointer",
+                }}
+              >
+                Cancel
+              </button>
+            </div>
+          </div>
+        </div>
+      )}
+
+      {/* HEADER SECTION */}
       <div
         style={{
           padding: "2rem",
@@ -139,10 +223,9 @@ const Closet = () => {
             DIGITAL ARCHIVE.
           </h1>
           <p style={{ fontSize: "0.8rem", opacity: 0.7 }}>
-            UPLOAD NEW ASSETS TO DATABASE
+            ASSET MANAGEMENT INTERFACE
           </p>
         </div>
-
         <div
           style={{
             display: "flex",
@@ -174,18 +257,16 @@ const Closet = () => {
             <option value="SHOES">SHOES</option>
             <option value="BAGS">BAGS</option>
           </select>
-
           <button
             className="action-button"
             style={{ marginTop: 0, padding: "5px 15px", fontSize: "0.8rem" }}
             onClick={() => fileInputRef.current.click()}
           >
-            + UPLOAD FILE
+            + ADD NEW
           </button>
         </div>
       </div>
 
-      {/* Verstecktes File-Input-Element */}
       <input
         type="file"
         ref={fileInputRef}
@@ -194,7 +275,7 @@ const Closet = () => {
         accept="image/*"
       />
 
-      {/* 2. DIE 4 REIHEN (Horizontal Scrolling) */}
+      {/* CATEGORY ROWS with Fixed X placement */}
       <div style={{ padding: "2rem" }}>
         {["TOPS", "BOTTOMS", "SHOES", "BAGS"].map((cat) => (
           <div key={cat} style={{ marginBottom: "3rem" }}>
@@ -207,53 +288,51 @@ const Closet = () => {
             >
               0{["TOPS", "BOTTOMS", "SHOES", "BAGS"].indexOf(cat) + 1} / {cat}
             </h3>
-
-            {/* Horizontal Scroll Container */}
             <div
               style={{
                 display: "flex",
-                gap: "20px",
+                gap: "30px",
                 overflowX: "auto",
-                paddingBottom: "10px",
+                paddingBottom: "20px",
                 whiteSpace: "nowrap",
               }}
             >
-              {/* Echte Items */}
               {getCategoryItems(cat).map((item) => (
                 <div
                   key={item.id}
                   style={{
-                    position: "relative", // Für die Positionierung des Löschen-Buttons
-                    minWidth: "150px",
-                    height: "150px",
-                    border: "1px solid #eee",
+                    position: "relative",
+                    minWidth: "160px",
+                    height: "160px",
+                    border: "2px solid black",
                     padding: "10px",
                     background: "white",
+                    boxShadow: "6px 6px 0px black",
                   }}
                 >
+                  {/* Korrigiertes X: Versetzt in der Ecke platziert */}
                   <button
-                    onClick={() => handleDeleteItem(item.id)}
-                    title="Item löschen"
+                    onClick={() => setItemToDelete(item.id)}
                     style={{
                       position: "absolute",
-                      top: "5px",
+                      top: "6px",
                       right: "5px",
-                      background: "rgba(255, 255, 255, 0.9)",
+                      width: "15px",
+                      height: "23px",
+                      fontSize: "10px",
+                      // ---------------------
+                      background: "white",
+                      color: "black",
                       border: "1px solid black",
-                      borderRadius: "50%",
-                      width: "24px",
-                      height: "24px",
                       cursor: "pointer",
+                      fontWeight: "bold",
+                      zIndex: 20,
                       display: "flex",
                       alignItems: "center",
                       justifyContent: "center",
-                      fontWeight: "bold",
-                      zIndex: 10,
-                      padding: 0,
-                      fontSize: "14px",
                     }}
                   >
-                    &times;
+                    X
                   </button>
                   <img
                     src={item.image_path}
@@ -271,16 +350,17 @@ const Closet = () => {
         ))}
       </div>
 
-      {/* 3. UPLOAD MODAL (Pop-up Fenster) */}
+      {/* UPLOAD MODAL */}
       {isModalOpen && (
         <div
+          onClick={() => setIsModalOpen(false)}
           style={{
             position: "fixed",
             top: 0,
             left: 0,
             width: "100%",
             height: "100%",
-            background: "rgba(0,0,0,0.5)",
+            background: "rgba(0,0,0,0.8)",
             display: "flex",
             alignItems: "center",
             justifyContent: "center",
@@ -288,40 +368,40 @@ const Closet = () => {
           }}
         >
           <div
+            onClick={(e) => e.stopPropagation()}
             style={{
               background: "white",
               padding: "2rem",
-              border: "1px solid black",
+              border: "4px solid black",
               width: "400px",
               textAlign: "center",
+              boxShadow: "12px 12px 0px black",
             }}
           >
             <h3
               style={{
                 marginTop: 0,
-                borderBottom: "1px solid #eee",
+                borderBottom: "2px solid black",
                 paddingBottom: "10px",
                 textAlign: "left",
               }}
             >
-              CONFIRM ITEM
+              CONFIRM ASSET
             </h3>
-
             {previewImage && (
               <img
                 src={previewImage}
                 alt="Preview"
                 style={{
                   maxWidth: "100%",
-                  height: "200px",
+                  height: "220px",
                   objectFit: "contain",
                   margin: "20px 0",
-                  background: "#f9f9f9",
-                  border: "1px solid #eee",
+                  background: "#f0f0f0",
+                  border: "1px solid black",
                 }}
               />
             )}
-
             <div style={{ margin: "20px 0", textAlign: "left" }}>
               <label
                 style={{
@@ -339,7 +419,8 @@ const Closet = () => {
                 style={{
                   width: "100%",
                   padding: "10px",
-                  border: "1px solid black",
+                  border: "2px solid black",
+                  fontWeight: "bold",
                 }}
               >
                 <option value="TOPS">TOPS</option>
@@ -348,13 +429,17 @@ const Closet = () => {
                 <option value="BAGS">BAGS</option>
               </select>
             </div>
-
             <button
               className="action-button"
-              style={{ width: "100%", background: "black", color: "white" }}
+              style={{
+                width: "100%",
+                background: "black",
+                color: "white",
+                padding: "15px",
+              }}
               onClick={handleConfirmUpload}
             >
-              CONFIRM & UPLOAD
+              UPLOAD TO CLOSET
             </button>
             <button
               onClick={() => setIsModalOpen(false)}
@@ -362,12 +447,13 @@ const Closet = () => {
                 width: "100%",
                 background: "transparent",
                 border: "none",
-                marginTop: "10px",
+                marginTop: "15px",
                 cursor: "pointer",
                 textDecoration: "underline",
+                fontWeight: "bold",
               }}
             >
-              Cancel
+              CANCEL
             </button>
           </div>
         </div>
