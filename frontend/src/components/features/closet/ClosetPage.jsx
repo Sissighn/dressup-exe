@@ -12,6 +12,7 @@ const ClosetPage = () => {
   const [items, setItems] = useState([]);
   const [uploadName] = useState("");
   const [uploadCategory, setUploadCategory] = useState("TOPS");
+  const [filterCategory, setFilterCategory] = useState("ALL");
   const [isModalOpen, setIsModalOpen] = useState(false);
   const [selectedFile, setSelectedFile] = useState(null);
   const [previewImage, setPreviewImage] = useState(null);
@@ -97,6 +98,8 @@ const ClosetPage = () => {
 
   const fileInputRef = useRef(null);
   const getCategoryItems = (cat) => items.filter((i) => i.category === cat);
+  const getDisplayedCategories = () =>
+    filterCategory === "ALL" ? CATEGORIES : [filterCategory];
 
   return (
     <div
@@ -118,6 +121,8 @@ const ClosetPage = () => {
       <ClosetHeader
         uploadCategory={uploadCategory}
         onUploadCategoryChange={(e) => setUploadCategory(e.target.value)}
+        filterCategory={filterCategory}
+        onFilterCategoryChange={(e) => setFilterCategory(e.target.value)}
         onAddNewClick={() => fileInputRef.current.click()}
       />
 
@@ -130,7 +135,7 @@ const ClosetPage = () => {
       />
 
       <div style={{ padding: "2rem" }}>
-        {CATEGORIES.map((cat) => (
+        {getDisplayedCategories().map((cat) => (
           <CategoryRow
             key={cat}
             category={cat}
