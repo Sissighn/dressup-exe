@@ -64,19 +64,25 @@
 
 .delete-btn-top {
   position: absolute;
-  top: -10px;
-  right: -10px;
-  width: 28px;
-  height: 28px;
+  top: -8px;
+  right: -8px;
+  width: 20px;
+  height: 20px;
   background: var(--soft-black);
   color: white;
-  border: 2px solid white;
-  font-weight: bold;
+  border: 1.5px solid white;
+  font-size: 9px;
+  font-weight: 900;
   cursor: pointer;
   z-index: 10;
   display: flex;
   align-items: center;
   justify-content: center;
+  line-height: 1;
+}
+
+.delete-btn-top:hover {
+  background: #ff4444;
 }
 
 .text-link-btn {
@@ -98,6 +104,41 @@
   align-items: center;
   font-family: monospace;
   font-weight: bold;
+}
+
+.neo-img-clickable {
+  cursor: pointer;
+  position: relative;
+}
+
+.neo-img-overlay {
+  position: absolute;
+  inset: 0;
+  background: rgba(0, 0, 0, 0);
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  transition: background 0.2s ease;
+}
+
+.neo-img-clickable:hover .neo-img-overlay {
+  background: rgba(0, 0, 0, 0.35);
+}
+
+.neo-expand-icon {
+  font-size: 2rem;
+  color: white;
+  font-weight: 900;
+  opacity: 0;
+  transform: scale(0.7);
+  transition:
+    opacity 0.2s ease,
+    transform 0.2s ease;
+}
+
+.neo-img-clickable:hover .neo-expand-icon {
+  opacity: 1;
+  transform: scale(1);
 }
 
 .delete-x-btn {
