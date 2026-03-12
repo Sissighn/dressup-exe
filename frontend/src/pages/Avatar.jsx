@@ -66,17 +66,25 @@ const Avatar = () => {
         body: payload,
       });
 
+      const result = await response.json();
+
       if (response.ok) {
-        const result = await response.json();
         if (result.data && result.data.avatar_url) {
           localStorage.setItem("userAvatar", result.data.avatar_url);
           localStorage.setItem("userName", formData.name);
+          if (result.data.warning) {
+            console.warn(result.data.warning);
+          }
           navigate("/");
         } else {
-          alert("Fehler: Keine Avatar URL erhalten.");
+          alert(
+            result.message ||
+              result.error ||
+              "Fehler: Keine Avatar URL erhalten.",
+          );
         }
       } else {
-        alert("Server Error.");
+        alert(result.detail || result.message || "Server Error.");
       }
     } catch (error) {
       console.error("Error:", error);
