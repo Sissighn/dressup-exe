@@ -1,14 +1,136 @@
 import os
 from io import BytesIO
-from PIL import Image
-import replicate
-import requests
+from PIL import Image, ImageEnhance, ImageFilter, ImageOps
 import base64
 
 # WICHTIG: Absoluter Pfad verwenden!
 BASE_DIR = os.path.dirname(os.path.abspath(__file__))
 UPLOAD_DIR = os.path.join(BASE_DIR, "uploads")
 os.makedirs(UPLOAD_DIR, exist_ok=True)
+
+TARGET_WIDTH = 1080
+TARGET_HEIGHT = 1920
+MAX_AVATAR_ATTEMPTS = 8
+
+
+def normalize_gender(gender):
+    gender_value = (gender or "person").strip().lower()
+    if gender_value in {"male", "man", "männlich"}:
+        return "male"
+    if gender_value in {"female", "woman", "weiblich"}:
+        return "female"
+    return "person"
+
+
+def create_avatar_reference(face_path, face_scale=0.32):
+    """Platziert das hochgeladene Gesichtsbild klein auf einer 9:16 Leinwand,
+    damit das Modell genügend Raum für einen Ganzkörper-Avatar erhält.
+    """
+    with Image.open(face_path) as original:
+        source = ImageOps.exif_transpose(original).convert("RGB")
+
+        background = ImageOps.fit(
+            source,
+            (TARGET_WIDTH, TARGET_HEIGHT),
+            method=Image.Resampling.LANCZOS,
+        )
+        background = background.filter(ImageFilter.GaussianBlur(radius=32))
+        background = ImageEnhance.Brightness(background).enhance(0.82)
+
+        canvas = Image.new("RGB", (TARGET_WIDTH, TARGET_HEIGHT), (232, 232, 232))
+        canvas.paste(background, (0, 0))
+
+        subject = ImageOps.contain(
+            source,
+            (
+                max(220, int(TARGET_WIDTH * face_scale)),
+                max(320, int(TARGET_HEIGHT * 0.24)),
+            ),
+            method=Image.Resampling.LANCZOS,
+        )
+
+        panel_width = min(TARGET_WIDTH - 120, subject.width + 80)
+        panel_height = min(TARGET_HEIGHT // 3, subject.height + 80)
+        panel = Image.new("RGB", (panel_width, panel_height), (245, 245, 245))
+
+        subject_x = (panel_width - subject.width) // 2
+        subject_y = max(24, (panel_height - subject.height) // 2)
+        panel.paste(subject, (subject_x, subject_y))
+
+        panel_x = (TARGET_WIDTH - panel_width) // 2
+        panel_y = 110
+        canvas.paste(panel, (panel_x, panel_y))
+
+        return canvas
+
+
+def build_avatar_prompt(height, weight, body_type, gender, attempt):
+    subject_gender = normalize_gender(gender)
+    makeup_instruction = ""
+
+    if subject_gender == "female":
+        makeup_instruction = (
+            " If the reference face shows makeup, reproduce the same makeup style, placement, colors, and intensity on the avatar face."
+            " If the reference face has no makeup, keep the avatar face natural without adding new makeup."
+        )
+
+    return (
+        f"STRICT FORMAT RULE: Generate a vertical 9:16 portrait image (1080x1920 pixels). "
+        f"IMPORTANT: The ENTIRE body from HEAD to FEET must be VISIBLE in the 9:16 portrait format."
+        f"The output MUST be a tall portrait, regardless of the input image shape. "
+        f"\nCONTENT: A stunning, highly photorealistic full-body portrait of a {gender} with a {body_type} body type, featuring this exact face. "
+        f"- Visible head to toe. "
+        f"- Height: {height}cm, Weight: {weight}kg. "
+        f"- Clothing: High-quality sport white TANK top and grey leggings. "
+        f"- Pose: Standing upright, confident natural pose, facing camera. "
+        f"- Lighting: Soft cinematic studio lighting to enhance facial features naturally. "
+        f"- Background: Solid neutral grey studio background."
+        f"IMPORTANT: The person must be clearly {gender}. Maintain the exact facial identity from the image."
+        f" Preserve skin texture, eyebrows, eyes, nose, lips, and overall face proportions as closely as possible."
+        f"{makeup_instruction}"
+    )
+
+
+def save_generated_image(response, output_path):
+    candidates = getattr(response, "candidates", None) or []
+    if not candidates:
+        return False
+
+    for candidate in candidates:
+        content = getattr(candidate, "content", None)
+        parts = getattr(content, "parts", None) or []
+
+        for part in parts:
+            if hasattr(part, "as_image") and part.as_image() is not None:
+                part.as_image().save(output_path)
+                return True
+            if hasattr(part, "inline_data") and part.inline_data is not None:
+                image_data = base64.b64decode(part.inline_data.data)
+                with open(output_path, "wb") as f:
+                    f.write(image_data)
+                return True
+
+    return False
+
+
+async def is_full_body_avatar(client, generated_image_path):
+    try:
+        with Image.open(generated_image_path) as generated_image:
+            evaluation = client.models.generate_content(
+                model="gemini-2.5-flash",
+                contents=[
+                    (
+                        "Answer with PASS or FAIL only. PASS only if the image shows exactly one person in a full-body view: "
+                        "the entire person is visible from head to both feet, with feet fully inside the frame and no crop below the ankles or above the head. "
+                        "FAIL for any upper-body, half-body, knee-up, or partially cropped composition."
+                    ),
+                    generated_image.copy(),
+                ],
+            )
+        return (evaluation.text or "").strip().upper().startswith("PASS")
+    except Exception as e:
+        print(f"⚠️ Full-body validation skipped: {e}")
+        return True
 
 
 def resize_to_target(image_path, target_width=1080, target_height=1920):
@@ -43,29 +165,6 @@ def resize_to_target(image_path, target_width=1080, target_height=1920):
         print(f"⚠️ Resize fehlgeschlagen: {e}")
 
 
-async def apply_face_restoration(original_avatar_path, generated_outfit_path):
-    """Setzt das Original-Gesicht wieder auf den generierten Körper."""
-    try:
-        output = replicate.run(
-            "lucataco/faceswap:9a4298548422074c3f57258c5d544497314408314496c395973651431647436d",
-            input={
-                "target_image": open(generated_outfit_path, "rb"),
-                "source_image": open(original_avatar_path, "rb"),
-                "swap_mode": "inswapper",
-            },
-        )
-        if output:
-            response = requests.get(output)
-            if response.status_code == 200:
-                with open(generated_outfit_path, "wb") as f:
-                    f.write(response.content)
-                return True
-        return False
-    except Exception as e:
-        print(f"⚠️ Face Restoration fehlgeschlagen: {e}")
-        return False
-
-
 async def try_gemini_generation(
     face_path, display_name, height, weight, body_type, gender
 ):
@@ -73,46 +172,78 @@ async def try_gemini_generation(
         from google import genai
 
         client = genai.Client(api_key=os.getenv("GOOGLE_API_KEY"))
-        face_image = Image.open(face_path)
-
-        # Dein Original-Prompt
-        prompt = (
-            f"STRICT FORMAT RULE: Generate a vertical 9:16 portrait image (1080x1920 pixels). "
-            f"IMPORTANT: The ENTIRE body from HEAD to FEET must be VISIBLE in the 9:16 portrait format."
-            f"The output MUST be a tall portrait, regardless of the input image shape. "
-            f"\nCONTENT: A stunning, highly photorealistic full-body portrait of a {gender} with a {body_type} body type, featuring this exact face. "
-            f"- Visible head to toe. "
-            f"- Height: {height}cm, Weight: {weight}kg. "
-            f"- Clothing: High-quality sport white TANK top and grey leggings. "
-            f"- Pose: Standing upright, confident natural pose, facing camera. "
-            f"- Lighting: Soft cinematic studio lighting to enhance facial features naturally. "
-            f"- Background: Solid neutral grey studio background."
-            f"IMPORTANT: The person must be clearly {gender}. Maintain the exact facial identity from the image. "
-        )
-
-        response = client.models.generate_content(
-            model="gemini-2.5-flash-image", contents=[prompt, face_image]
-        )
         avatar_filename = os.path.join(
             UPLOAD_DIR, f"avatar_{display_name.replace(' ', '_')}_gemini.png"
         )
+        face_scales = [0.34, 0.30, 0.26, 0.22, 0.18]
+        last_error = "AI returned no image parts for avatar generation."
 
-        # Bild speichern Logik
-        image_saved = False
-        if response.candidates and response.candidates[0].content.parts:
-            for part in response.candidates[0].content.parts:
-                if hasattr(part, "as_image") and part.as_image() is not None:
-                    part.as_image().save(avatar_filename)
-                    image_saved = True
-                    break
+        with Image.open(face_path) as original_face:
+            original_face_image = ImageOps.exif_transpose(original_face).convert("RGB")
 
-        if image_saved:
-            resize_to_target(avatar_filename, 1080, 1920)
-            return {
-                "success": True,
-                "avatar_url": f"http://localhost:8000/uploads/{os.path.basename(avatar_filename)}",
-            }
-        return {"success": False, "error": "Keine Bilddaten"}
+        for attempt in range(1, MAX_AVATAR_ATTEMPTS + 1):
+            face_scale = face_scales[min(attempt - 1, len(face_scales) - 1)]
+            reference_image = create_avatar_reference(face_path, face_scale=face_scale)
+            prompt = build_avatar_prompt(height, weight, body_type, gender, attempt)
+
+            response = client.models.generate_content(
+                model="gemini-2.5-flash-image",
+                contents=[prompt, reference_image, original_face_image],
+            )
+
+            image_saved = save_generated_image(response, avatar_filename)
+            if not image_saved:
+                last_error = "AI returned no image parts for avatar generation."
+                continue
+
+            resize_to_target(avatar_filename, TARGET_WIDTH, TARGET_HEIGHT)
+            generated_avatar_url = (
+                f"http://localhost:8000/uploads/{os.path.basename(avatar_filename)}"
+            )
+
+            if await is_full_body_avatar(client, avatar_filename):
+                return {
+                    "success": True,
+                    "avatar_url": generated_avatar_url,
+                }
+
+            print(
+                f"⚠️ Attempt {attempt}: Generated avatar was not full-body. Retrying with a wider composition."
+            )
+
+            correction_prompt = (
+                "Image editing task. Keep the same person identity and outfit exactly, but change framing only. "
+                "Generate an exact 1080x1920 vertical image where the full body is visible from head to both feet. "
+                "Do not crop the feet, ankles, legs, hands, or head. "
+                "Zoom the camera out and keep empty space above head and below feet. "
+                "One person only, standing, front-facing, neutral grey studio background."
+            )
+
+            with Image.open(avatar_filename) as generated_image_for_fix:
+                fixed_response = client.models.generate_content(
+                    model="gemini-2.5-flash-image",
+                    contents=[
+                        correction_prompt,
+                        generated_image_for_fix.copy(),
+                        original_face_image,
+                    ],
+                )
+
+            fixed_saved = save_generated_image(fixed_response, avatar_filename)
+            if fixed_saved:
+                resize_to_target(avatar_filename, TARGET_WIDTH, TARGET_HEIGHT)
+                if await is_full_body_avatar(client, avatar_filename):
+                    return {
+                        "success": True,
+                        "avatar_url": generated_avatar_url,
+                    }
+
+            last_error = "AI generated an avatar, but strict full-body validation failed on all retry attempts."
+
+        return {
+            "success": False,
+            "error": last_error,
+        }
     except Exception as e:
         return {"success": False, "error": str(e)}
 
@@ -152,29 +283,13 @@ async def try_gemini_outfit_generation(avatar_path, top_path, bottom_path):
             UPLOAD_DIR, f"outfit_result_{os.path.basename(avatar_path)}"
         )
 
-        # Vollständige Speicher-Logik
-        image_saved = False
-        if response.candidates and response.candidates[0].content.parts:
-            for part in response.candidates[0].content.parts:
-                if hasattr(part, "as_image") and part.as_image() is not None:
-                    part.as_image().save(outfit_filename)
-                    image_saved = True
-                    break
-                elif hasattr(part, "inline_data") and part.inline_data is not None:
-                    image_data = base64.b64decode(part.inline_data.data)
-                    with open(outfit_filename, "wb") as f:
-                        f.write(image_data)
-                    image_saved = True
-                    break
+        image_saved = save_generated_image(response, outfit_filename)
 
         if not image_saved:
             return {"success": False, "error": "AI hat kein Bild generiert."}
 
         # Format fixieren
         resize_to_target(outfit_filename, 1080, 1920)
-
-        # Gesicht wiederherstellen (Wichtig für Identität)
-        await apply_face_restoration(avatar_path, outfit_filename)
 
         return {
             "success": True,
