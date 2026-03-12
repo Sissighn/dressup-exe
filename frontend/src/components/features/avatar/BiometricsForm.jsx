@@ -42,6 +42,8 @@ const BiometricsForm = ({ formData, onInputChange }) => {
               width: "100%",
               padding: "10px",
               border: "1px solid black",
+              height: "41px",
+              boxSizing: "border-box",
             }}
           />
         </div>
@@ -67,6 +69,7 @@ const BiometricsForm = ({ formData, onInputChange }) => {
               border: "1px solid black",
               borderRadius: 0,
               height: "41px",
+              boxSizing: "border-box",
             }}
           >
             <option value="FEMALE">FEMALE</option>
@@ -103,6 +106,8 @@ const BiometricsForm = ({ formData, onInputChange }) => {
               width: "100%",
               padding: "10px",
               border: "1px solid black",
+              height: "41px",
+              boxSizing: "border-box",
             }}
           />
         </div>
@@ -127,6 +132,8 @@ const BiometricsForm = ({ formData, onInputChange }) => {
               width: "100%",
               padding: "10px",
               border: "1px solid black",
+              height: "41px",
+              boxSizing: "border-box",
             }}
           />
         </div>
@@ -152,6 +159,8 @@ const BiometricsForm = ({ formData, onInputChange }) => {
             padding: "10px",
             border: "1px solid black",
             borderRadius: 0,
+            height: "41px",
+            boxSizing: "border-box",
           }}
         >
           <option value="ATHLETIC">ATHLETIC</option>
