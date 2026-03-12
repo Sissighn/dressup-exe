@@ -96,3 +96,19 @@ html,
   cursor: pointer;
   border: 1px solid black;
 }
+
+.footer-bar {
+  display: flex;
+  gap: 0;
+  border-top: 1px solid var(--border-color);
+  background: var(--accent-pink);
+  font-family: "Courier New", Courier, monospace;
+  font-size: 0.7rem;
+  font-weight: 700;
+  flex-shrink: 0;
+}
+
+.footer-bar span {
+  padding: 6px 16px;
+  border-right: 1px solid var(--border-color);
+}
