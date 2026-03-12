@@ -4,6 +4,8 @@ import styles from "./ClosetHeader.module.css";
 const ClosetHeader = ({
   uploadCategory,
   onUploadCategoryChange,
+  filterCategory,
+  onFilterCategoryChange,
   onAddNewClick,
 }) => {
   return (
@@ -15,10 +17,11 @@ const ClosetHeader = ({
 
       <div className={styles.controls}>
         <select
-          value={uploadCategory}
-          onChange={onUploadCategoryChange}
+          value={filterCategory}
+          onChange={onFilterCategoryChange}
           className={styles.select}
         >
+          <option value="ALL">ALL CATEGORIES</option>
           <option value="TOPS">TOPS</option>
           <option value="BOTTOMS">BOTTOMS</option>
           <option value="SHOES">SHOES</option>
