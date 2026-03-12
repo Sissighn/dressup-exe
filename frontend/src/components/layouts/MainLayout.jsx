@@ -1,17 +1,44 @@
-import React from "react";
+import React, { useState, useEffect } from "react";
+import { useLocation } from "react-router-dom";
 import Header from "../common/Header";
 
+const PAGE_NAMES = {
+  "/": "WARDROBE",
+  "/closet": "CLOSET",
+  "/gallery": "LOOKBOOK",
+  "/avatar": "MY MODEL",
+  "/about": "ABOUT",
+};
+
 const MainLayout = ({ children }) => {
+  const location = useLocation();
+  const [time, setTime] = useState(new Date());
+
+  useEffect(() => {
+    const timer = setInterval(() => setTime(new Date()), 1000);
+    return () => clearInterval(timer);
+  }, []);
+
+  const formattedTime = time.toLocaleTimeString("de-DE", {
+    hour: "2-digit",
+    minute: "2-digit",
+    second: "2-digit",
+  });
+  const formattedDate = time.toLocaleDateString("de-DE", {
+    day: "2-digit",
+    month: "2-digit",
+    year: "numeric",
+  });
+  const currentPage = PAGE_NAMES[location.pathname] || "—";
+
   return (
     <div className="app-container">
       <Header />
-      {/* 'children' ist hier die jeweilige Seite (z.B. Wardrobe, Closet), 
-          die von React Router gerendert wird. */}
       {children}
       <div className="footer-bar">
-        <span>STATUS: ONLINE</span>
-        <span>SYSTEM: REACT v18</span>
-        <span>LOCATION: BERLIN</span>
+        <span>PAGE: {currentPage}</span>
+        <span>DATE: {formattedDate}</span>
+        <span>TIME: {formattedTime}</span>
       </div>
     </div>
   );
