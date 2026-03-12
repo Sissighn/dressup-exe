@@ -7,20 +7,14 @@ const LookCard = ({ look, onDelete }) => {
         ✕
       </button>
 
-      <div className="neo-img-frame">
+      <div
+        className="neo-img-frame neo-img-clickable"
+        onClick={() => window.open(look.url, "_blank")}
+      >
         <img src={look.url} alt="Look" />
-      </div>
-
-      <div className="neo-card-footer-mustard">
-        <span className="asset-id-text">
-          ID_{look.id.split("_").pop().substring(0, 6)}
-        </span>
-        <button
-          className="expand-link-btn"
-          onClick={() => window.open(look.url, "_blank")}
-        >
-          VIEW
-        </button>
+        <div className="neo-img-overlay">
+          <span className="neo-expand-icon">↗</span>
+        </div>
       </div>
     </div>
   );
