@@ -2,8 +2,6 @@ import React from "react";
 import styles from "./ClosetHeader.module.css";
 
 const ClosetHeader = ({
-  uploadName,
-  onUploadNameChange,
   uploadCategory,
   onUploadCategoryChange,
   onAddNewClick,
@@ -16,14 +14,6 @@ const ClosetHeader = ({
       </div>
 
       <div className={styles.controls}>
-        <input
-          type="text"
-          placeholder="ITEM NAME"
-          value={uploadName}
-          onChange={onUploadNameChange}
-          className={styles.input}
-        />
-
         <select
           value={uploadCategory}
           onChange={onUploadCategoryChange}

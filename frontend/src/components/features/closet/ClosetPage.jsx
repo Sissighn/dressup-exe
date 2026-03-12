@@ -10,7 +10,7 @@ const CATEGORIES = ["TOPS", "BOTTOMS", "SHOES", "BAGS"];
 
 const ClosetPage = () => {
   const [items, setItems] = useState([]);
-  const [uploadName, setUploadName] = useState("");
+  const [uploadName] = useState("");
   const [uploadCategory, setUploadCategory] = useState("TOPS");
   const [isModalOpen, setIsModalOpen] = useState(false);
   const [selectedFile, setSelectedFile] = useState(null);
@@ -116,8 +116,6 @@ const ClosetPage = () => {
       )}
 
       <ClosetHeader
-        uploadName={uploadName}
-        onUploadNameChange={(e) => setUploadName(e.target.value)}
         uploadCategory={uploadCategory}
         onUploadCategoryChange={(e) => setUploadCategory(e.target.value)}
         onAddNewClick={() => fileInputRef.current.click()}
