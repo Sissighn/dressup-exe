@@ -40,7 +40,7 @@ app.mount("/uploads", StaticFiles(directory=UPLOAD_DIR), name="uploads")
 def read_root():
     return {
         "status": "Backend Online - Smart Avatar & Closet Database",
-        "features": ["Auto-Fallback", "Gemini + Replicate", "SQLite Database"],
+        "features": ["Gemini AI", "SQLite Database"],
     }
 
 
@@ -200,16 +200,16 @@ async def generate_avatar(
             face_path, display_name, height, weight, body_type, gender
         )
 
-        if not result["success"]:
-            result = await services.try_replicate_generation(
-                face_path, display_name, height, weight, body_type, gender
-            )
-
         if result["success"]:
             return {"status": "success", "data": result}
-        raise Exception(result.get("error", "Generation failed"))
+        raise HTTPException(
+            status_code=422,
+            detail=result.get("error", "Generation failed"),
+        )
+    except HTTPException:
+        raise
     except Exception as e:
-        return {"status": "error", "message": str(e)}
+        raise HTTPException(status_code=500, detail=str(e))
 
 
 @app.post("/try-on-outfit")
@@ -238,43 +238,9 @@ async def try_on_outfit(
         raise HTTPException(status_code=500, detail=str(e))
 
 
-@app.post("/generate-avatar")
-async def generate_avatar(
-    face_scan: UploadFile = File(...),
-    display_name: str = Form(...),
-    height: str = Form(...),
-    weight: str = Form(...),
-    body_type: str = Form(...),
-):
-    try:
-        face_path = os.path.join(UPLOAD_DIR, f"face_{face_scan.filename}")
-        with open(face_path, "wb") as f:
-            shutil.copyfileobj(face_scan.file, f)
-
-        result = await services.try_gemini_generation(
-            face_path, display_name, height, weight, body_type
-        )
-        if result["success"]:
-            return {"status": "success", "data": result}
-
-        # Fallback zu Replicate
-        if result.get("error") == "quota_exceeded":
-            result = await services.try_replicate_generation(
-                face_path, display_name, height, weight, body_type
-            )
-            if result["success"]:
-                return {"status": "success", "data": result}
-
-        raise Exception(result.get("error", "Generation failed"))
-    except Exception as e:
-        return {"status": "error", "message": str(e)}
-
-
 @app.get("/providers/check")
 def check_providers():
     google_key = os.getenv("GOOGLE_API_KEY")
-    replicate_key = os.getenv("REPLICATE_API_TOKEN")
     return {
         "gemini": "Ready" if google_key else "Missing",
-        "replicate": "Ready" if replicate_key else "Missing",
     }
