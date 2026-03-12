@@ -2,11 +2,13 @@ import React, { useState, useEffect } from "react";
 import "../App.css";
 import GalleryHeader from "../components/features/gallery/GalleryHeader";
 import GalleryGrid from "../components/features/gallery/GalleryGrid";
+import DeleteItemModal from "../components/features/closet/DeleteItemModal/DeleteItemModal";
 import "../components/features/gallery/gallery.css";
 
 const Gallery = () => {
   const [looks, setLooks] = useState([]);
   const [loading, setLoading] = useState(true);
+  const [pendingDeleteId, setPendingDeleteId] = useState(null);
 
   const fetchGallery = async () => {
     try {
@@ -24,22 +26,42 @@ const Gallery = () => {
     fetchGallery();
   }, []);
 
-  const handleDelete = async (filename) => {
-    if (!window.confirm("PERMANENTLY DELETE THIS ASSET?")) return;
+  const handleDeleteRequest = (filename) => {
+    setPendingDeleteId(filename);
+  };
+
+  const handleDeleteConfirm = async () => {
     try {
-      const res = await fetch(`http://localhost:8000/delete-look/${filename}`, {
-        method: "DELETE",
-      });
-      if (res.ok) setLooks(looks.filter((l) => l.id !== filename));
+      const res = await fetch(
+        `http://localhost:8000/delete-look/${pendingDeleteId}`,
+        { method: "DELETE" },
+      );
+      if (res.ok) setLooks(looks.filter((l) => l.id !== pendingDeleteId));
     } catch (e) {
-      alert("ERROR.");
+      console.error("ERROR.");
+    } finally {
+      setPendingDeleteId(null);
     }
+  };
+
+  const handleDeleteCancel = () => {
+    setPendingDeleteId(null);
   };
 
   return (
     <div className="gallery-page-container">
       <GalleryHeader assetCount={looks.length} />
-      <GalleryGrid loading={loading} looks={looks} onDelete={handleDelete} />
+      <GalleryGrid
+        loading={loading}
+        looks={looks}
+        onDelete={handleDeleteRequest}
+      />
+      {pendingDeleteId && (
+        <DeleteItemModal
+          onConfirm={handleDeleteConfirm}
+          onCancel={handleDeleteCancel}
+        />
+      )}
     </div>
   );
 };
