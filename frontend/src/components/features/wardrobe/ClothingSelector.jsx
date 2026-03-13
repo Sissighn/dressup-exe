@@ -16,31 +16,19 @@ const ClothingSelector = ({
         &lt;
       </button>
       {currentItem ? (
-        <div
-          style={{
-            textAlign: "center",
-            display: "flex",
-            flexDirection: "column",
-            alignItems: "center",
-            justifyContent: "center",
-            gap: "8px",
-          }}
-        >
+        <div className="clothing-selector-card">
           <img
             src={currentItem.image_path}
             alt={currentItem.name}
-            style={{ height: "120px", objectFit: "contain" }}
+            className="clothing-preview-image"
           />
           <button
             onClick={() => onSelect(currentItem)}
+            className="clothing-select-button"
             style={{
-              fontSize: "10px",
-              padding: "5px 12px",
-              cursor: "pointer",
               background:
                 selectedItem?.id === currentItem.id ? "black" : "white",
               color: selectedItem?.id === currentItem.id ? "white" : "black",
-              border: "1px solid black",
             }}
           >
             {selectedItem?.id === currentItem.id ? "SELECTED" : "SELECT"}
