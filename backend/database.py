@@ -23,6 +23,14 @@ class ClothingItem(Base):
     name = Column(String, index=True)
     category = Column(String)  # 'TOPS', 'BOTTOMS', 'SHOES', 'BAGS'
     image_path = Column(String)
+    owner_key = Column(String, index=True, default="")
+
+
+class User(Base):
+    __tablename__ = "users"
+    id = Column(Integer, primary_key=True, index=True)
+    email = Column(String, unique=True, index=True, nullable=False)
+    password_hash = Column(String, nullable=False)
 
 
 # Dependency
