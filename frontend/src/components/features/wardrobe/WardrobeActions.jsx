@@ -108,10 +108,8 @@ const WardrobeActions = ({
             <ActionLabel
               icon={
                 <svg {...iconProps}>
-                  <path d="M9 18V5l12-2v13" />
-                  <path d="M9 9 21 7" />
-                  <circle cx="6" cy="18" r="3" />
-                  <circle cx="18" cy="16" r="3" />
+                  <path d="M9 3h6l1 3 3 2-2 4-2-1v10h-6V11l-2 1-2-4 3-2 1-3Z" />
+                  <path d="M10 7h4" />
                 </svg>
               }
             >
