@@ -11,6 +11,18 @@ const WardrobeActions = ({
   onReset,
   onRescan,
 }) => {
+  const baseButtonStyle = {
+    width: "100%",
+    minHeight: "44px",
+    padding: "10px 12px",
+    fontSize: "12px",
+    boxSizing: "border-box",
+    display: "flex",
+    alignItems: "center",
+    justifyContent: "center",
+    textAlign: "center",
+  };
+
   return (
     <div
       className="left-panel"
@@ -36,13 +48,12 @@ const WardrobeActions = ({
           onClick={onTryOn}
           disabled={!selectedTop || !selectedBottom || isGenerating}
           style={{
+            ...baseButtonStyle,
             background:
               !selectedTop || !selectedBottom || isGenerating
                 ? "#ccc"
                 : "black",
             color: "white",
-            padding: "10px",
-            fontSize: "12px",
             cursor: isGenerating ? "not-allowed" : "pointer",
           }}
         >
@@ -55,12 +66,11 @@ const WardrobeActions = ({
               className="action-button"
               onClick={onDownload}
               style={{
+                ...baseButtonStyle,
                 background: "var(--accent-yellow)",
                 color: "black",
                 border: "2px solid black",
                 fontWeight: "bold",
-                padding: "10px",
-                fontSize: "12px",
               }}
             >
               💾 SAVE LOOK (.PNG)
@@ -70,12 +80,11 @@ const WardrobeActions = ({
               className="action-button"
               onClick={onArchive}
               style={{
+                ...baseButtonStyle,
                 background: "white",
                 color: "black",
                 border: "2px solid black",
                 fontWeight: "bold",
-                padding: "10px",
-                fontSize: "12px",
                 boxShadow: "4px 4px 0px black",
               }}
             >
@@ -86,11 +95,10 @@ const WardrobeActions = ({
               className="action-button"
               onClick={onReset}
               style={{
+                ...baseButtonStyle,
                 background: "transparent",
                 color: "black",
                 border: "1px solid black",
-                padding: "10px",
-                fontSize: "12px",
               }}
             >
               RESET TO ORIGINAL
@@ -102,11 +110,11 @@ const WardrobeActions = ({
           className="action-button"
           onClick={onRescan}
           style={{
+            ...baseButtonStyle,
             marginTop: "5px",
-            fontSize: "11px",
             background: "transparent",
             border: "1px solid black",
-            padding: "8px",
+            fontSize: "11px",
           }}
         >
           RE-SCAN MODEL
