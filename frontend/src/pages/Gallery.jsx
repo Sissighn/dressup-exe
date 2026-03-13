@@ -4,6 +4,7 @@ import GalleryHeader from "../components/features/gallery/GalleryHeader";
 import GalleryGrid from "../components/features/gallery/GalleryGrid";
 import DeleteItemModal from "../components/features/closet/DeleteItemModal/DeleteItemModal";
 import "../components/features/gallery/gallery.css";
+import { authFetch } from "../lib/authSession";
 
 const Gallery = () => {
   const [looks, setLooks] = useState([]);
@@ -12,7 +13,7 @@ const Gallery = () => {
 
   const fetchGallery = async () => {
     try {
-      const res = await fetch("http://localhost:8000/gallery");
+      const res = await authFetch("/gallery");
       const data = await res.json();
       setLooks(data);
     } catch (e) {
@@ -32,10 +33,9 @@ const Gallery = () => {
 
   const handleDeleteConfirm = async () => {
     try {
-      const res = await fetch(
-        `http://localhost:8000/delete-look/${pendingDeleteId}`,
-        { method: "DELETE" },
-      );
+      const res = await authFetch(`/delete-look/${pendingDeleteId}`, {
+        method: "DELETE",
+      });
       if (res.ok) setLooks(looks.filter((l) => l.id !== pendingDeleteId));
     } catch (e) {
       console.error("ERROR.");
