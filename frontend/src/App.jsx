@@ -12,6 +12,8 @@ import {
   AUTH_STORAGE_KEY,
   API_BASE,
   clearScopedUserLocalData,
+  setScopedItem,
+  removeScopedItem,
 } from "./lib/authSession";
 
 function App() {
@@ -42,6 +44,39 @@ function App() {
         if (!response.ok) {
           localStorage.removeItem(AUTH_STORAGE_KEY);
           setSession(null);
+        } else if (session?.user?.role === "user") {
+          const profileResponse = await fetch(`${API_BASE}/profile`, {
+            headers: {
+              Authorization: `Bearer ${session.token}`,
+            },
+          });
+
+          if (profileResponse.ok) {
+            const profile = await profileResponse.json();
+
+            if (profile.avatar_url) {
+              setScopedItem("userAvatar", profile.avatar_url, session);
+            } else {
+              removeScopedItem("userAvatar", session);
+            }
+
+            if (profile.display_name) {
+              setScopedItem("userName", profile.display_name, session);
+            }
+
+            const biometrics = {
+              name: profile.display_name || "",
+              gender: profile.gender || "FEMALE",
+              height: profile.height || "",
+              weight: profile.weight || "",
+              bodyType: profile.body_type || "ATHLETIC",
+            };
+            setScopedItem(
+              "userBiometrics",
+              JSON.stringify(biometrics),
+              session,
+            );
+          }
         }
       } catch {
         localStorage.removeItem(AUTH_STORAGE_KEY);
