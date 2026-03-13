@@ -31,6 +31,12 @@ class User(Base):
     id = Column(Integer, primary_key=True, index=True)
     email = Column(String, unique=True, index=True, nullable=False)
     password_hash = Column(String, nullable=False)
+    display_name = Column(String, default="")
+    avatar_url = Column(String, default="")
+    gender = Column(String, default="")
+    height = Column(String, default="")
+    weight = Column(String, default="")
+    body_type = Column(String, default="")
 
 
 # Dependency
