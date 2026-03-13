@@ -5,6 +5,7 @@ import "../components/features/wardrobe/wardrobe.css";
 import WardrobeActions from "../components/features/wardrobe/WardrobeActions";
 import AvatarDisplay from "../components/features/wardrobe/AvatarDisplay";
 import ClothingSelector from "../components/features/wardrobe/ClothingSelector";
+import { authFetch } from "../lib/authSession";
 
 const Wardrobe = () => {
   const navigate = useNavigate();
@@ -63,7 +64,7 @@ const Wardrobe = () => {
 
     const fetchClosetItems = async () => {
       try {
-        const res = await fetch("http://localhost:8000/closet");
+        const res = await authFetch("/closet");
         const allItems = await res.json();
         setTops(allItems.filter((item) => item.category === "TOPS"));
         setBottoms(allItems.filter((item) => item.category === "BOTTOMS"));
@@ -113,7 +114,7 @@ const Wardrobe = () => {
       formData.append("top_image", topBlob, "top.png");
       formData.append("bottom_image", btmBlob, "bottom.png");
 
-      const response = await fetch("http://localhost:8000/try-on-outfit", {
+      const response = await authFetch("/try-on-outfit", {
         method: "POST",
         body: formData,
       });
@@ -162,7 +163,7 @@ const Wardrobe = () => {
   const handleArchive = async () => {
     if (!dressedAvatar) return;
     try {
-      const response = await fetch("http://localhost:8000/archive-look", {
+      const response = await authFetch("/archive-look", {
         method: "POST",
         headers: { "Content-Type": "application/json" },
         body: JSON.stringify({ outfit_url: dressedAvatar }),
