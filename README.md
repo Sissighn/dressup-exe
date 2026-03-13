@@ -1,6 +1,6 @@
-# DressUp.exe — AI Virtual Styling Platform
+# dressup.exe — AI Virtual Styling Platform
 
-DressUp.exe is a full-stack AI fashion application that turns a face scan into a personalized digital model, combines selected wardrobe pieces into generated outfit renders, and manages a visual archive of created looks.
+dressup.exe is a full-stack AI fashion application that turns a face scan into a personalized digital model, combines selected wardrobe pieces into generated outfit renders, and manages a visual archive of created looks.
 
 Built as a portfolio-grade product, the project combines:
 
