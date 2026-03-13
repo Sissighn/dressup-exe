@@ -5,8 +5,8 @@ dressup.exe is a full-stack AI fashion application that turns a face scan into a
 Built as a portfolio-grade product, the project combines:
 
 - AI image generation workflows
-- a FastAPI backend with persistent closet data (SQLite)
-- a React + Vite frontend with a custom brutalist-inspired UI
+- a Python + FastAPI backend with persistent closet data (SQLite)
+- a JavaScript + React + Vite frontend with a custom brutalist-inspired UI
 
 ---
 
@@ -22,14 +22,14 @@ Built as a portfolio-grade product, the project combines:
 
 ## Tech Stack
 
-### Frontend
+### Frontend (JavaScript)
 
 - React 19
 - React Router
 - Vite
 - CSS Modules + custom styling
 
-### Backend
+### Backend (Python)
 
 - FastAPI
 - SQLAlchemy
@@ -43,11 +43,11 @@ Built as a portfolio-grade product, the project combines:
 
 frontend/
 
-- React application (Wardrobe, Closet, Avatar, Gallery, About)
+- JavaScript React application (Wardrobe, Closet, Avatar, Gallery, About)
 
 backend/
 
-- FastAPI routes and AI service orchestration
+- Python FastAPI routes and AI service orchestration
 - `uploads/` static file storage
 
 database/
