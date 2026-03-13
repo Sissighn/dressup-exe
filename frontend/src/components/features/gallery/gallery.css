@@ -2,7 +2,9 @@
 
 .gallery-page-container {
   display: block;
-  min-height: 100vh;
+  flex: 1 1 auto;
+  min-height: 0;
+  overflow-y: auto;
   background-color: #f9f9f7; /* Off-White Hintergrund */
   background-image:
     linear-gradient(var(--grid-color) 1px, transparent 1px),
@@ -27,7 +29,8 @@
     minmax(180px, 1fr)
   ); /* Kleinere Karten */
   gap: 35px;
-  padding: 3rem 2rem;
+  padding: 3rem 2rem 5rem;
+  box-sizing: border-box;
 }
 
 /* --- NEO-ALBUM CARD: TAVUS EDITION --- */
