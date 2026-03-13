@@ -5,6 +5,7 @@ import CategoryRow from "./CategoryRow/CategoryRow";
 import DeleteItemModal from "./DeleteItemModal/DeleteItemModal";
 import UploadModal from "./UploadModal/UploadModal";
 import StatusNotification from "./StatusNotification/StatusNotification";
+import { authFetch } from "../../../lib/authSession";
 
 const CATEGORIES = ["TOPS", "BOTTOMS", "SHOES", "BAGS"];
 
@@ -22,7 +23,7 @@ const ClosetPage = () => {
 
   const fetchCloset = async () => {
     try {
-      const res = await fetch("http://localhost:8000/closet");
+      const res = await authFetch("/closet");
       const data = await res.json();
       setItems(data);
     } catch (e) {
@@ -54,7 +55,7 @@ const ClosetPage = () => {
     formData.append("category", modalCategory); // ← BUG FIX, aber logisch identisch gedacht
 
     try {
-      const response = await fetch("http://localhost:8000/upload-item", {
+      const response = await authFetch("/upload-item", {
         method: "POST",
         body: formData,
       });
@@ -65,7 +66,6 @@ const ClosetPage = () => {
       setIsModalOpen(false);
       setSelectedFile(null);
       setPreviewImage(null);
-      setUploadName("");
     } catch (error) {
       console.error("UPLOAD_ERROR:", error);
       setStatusMessage({
@@ -78,10 +78,9 @@ const ClosetPage = () => {
   const confirmDelete = async () => {
     if (!itemToDelete) return;
     try {
-      const response = await fetch(
-        `http://localhost:8000/delete-item/${itemToDelete}`,
-        { method: "DELETE" },
-      );
+      const response = await authFetch(`/delete-item/${itemToDelete}`, {
+        method: "DELETE",
+      });
       if (response.ok) {
         fetchCloset();
         setItemToDelete(null);
