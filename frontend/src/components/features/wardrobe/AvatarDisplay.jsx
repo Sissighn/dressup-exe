@@ -22,7 +22,11 @@ const AvatarDisplay = ({
           <div className="loader-status-line">{" >"} STITCHING...</div>
         </div>
       ) : displayImage ? (
-        <img src={displayImage} alt="Digital Twin" className="avatar-image-display" />
+        <img
+          src={displayImage}
+          alt="Digital Twin"
+          className="avatar-image-display"
+        />
       ) : (
         <div style={{ opacity: 0.3, textAlign: "center" }}>
           <h2>NO MODEL FOUND</h2>
