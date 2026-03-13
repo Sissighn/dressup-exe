@@ -3,7 +3,12 @@ import { useNavigate } from "react-router-dom";
 import "../components/features/avatar/avatar.css";
 import BiometricsForm from "../components/features/avatar/BiometricsForm";
 import FaceScanUpload from "../components/features/avatar/FaceScanUpload";
-import { authFetch } from "../lib/authSession";
+import {
+  authFetch,
+  getAuthSession,
+  getScopedItem,
+  setScopedItem,
+} from "../lib/authSession";
 
 const Avatar = () => {
   const navigate = useNavigate();
@@ -25,7 +30,8 @@ const Avatar = () => {
   const faceInputRef = useRef(null);
 
   useEffect(() => {
-    const savedData = localStorage.getItem("userBiometrics");
+    const session = getAuthSession();
+    const savedData = getScopedItem("userBiometrics", session);
     if (savedData) {
       setFormData(JSON.parse(savedData));
     }
@@ -34,7 +40,7 @@ const Avatar = () => {
   const handleInputChange = (e) => {
     const newData = { ...formData, [e.target.name]: e.target.value };
     setFormData(newData);
-    localStorage.setItem("userBiometrics", JSON.stringify(newData));
+    setScopedItem("userBiometrics", JSON.stringify(newData), getAuthSession());
   };
 
   const handleFileChange = (event) => {
@@ -71,8 +77,9 @@ const Avatar = () => {
 
       if (response.ok) {
         if (result.data && result.data.avatar_url) {
-          localStorage.setItem("userAvatar", result.data.avatar_url);
-          localStorage.setItem("userName", formData.name);
+          const session = getAuthSession();
+          setScopedItem("userAvatar", result.data.avatar_url, session);
+          setScopedItem("userName", formData.name, session);
           if (result.data.warning) {
             console.warn(result.data.warning);
           }
