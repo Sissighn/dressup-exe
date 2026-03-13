@@ -111,6 +111,10 @@ const Avatar = () => {
         if (result.data && result.data.avatar_url) {
           const session = getAuthSession();
           setScopedItem("userAvatar", result.data.avatar_url, session);
+          if (result.data.face_scan_url) {
+            setScopedItem("userProfileImage", result.data.face_scan_url, session);
+            window.dispatchEvent(new Event("profile-image-updated"));
+          }
           setScopedItem("userName", formData.name, session);
           if (result.data.warning) {
             console.warn(result.data.warning);
