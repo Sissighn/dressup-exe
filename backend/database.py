@@ -33,6 +33,7 @@ class User(Base):
     password_hash = Column(String, nullable=False)
     display_name = Column(String, default="")
     avatar_url = Column(String, default="")
+    face_scan_url = Column(String, default="")
     gender = Column(String, default="")
     height = Column(String, default="")
     weight = Column(String, default="")
