@@ -1,5 +1,35 @@
 import React from "react";
 
+const ActionLabel = ({ icon, children }) => (
+  <span
+    style={{
+      display: "inline-flex",
+      alignItems: "center",
+      justifyContent: "center",
+      gap: "8px",
+    }}
+  >
+    <span
+      aria-hidden="true"
+      style={{ display: "inline-flex", alignItems: "center", lineHeight: 0 }}
+    >
+      {icon}
+    </span>
+    <span>{children}</span>
+  </span>
+);
+
+const iconProps = {
+  width: 14,
+  height: 14,
+  viewBox: "0 0 24 24",
+  fill: "none",
+  stroke: "currentColor",
+  strokeWidth: 2,
+  strokeLinecap: "round",
+  strokeLinejoin: "round",
+};
+
 const WardrobeActions = ({
   isGenerating,
   dressedAvatar,
@@ -57,7 +87,37 @@ const WardrobeActions = ({
             cursor: isGenerating ? "not-allowed" : "pointer",
           }}
         >
-          {isGenerating ? "AI GENERATING..." : "TRY THE COMBI ON"}
+          {isGenerating ? (
+            <ActionLabel
+              icon={
+                <svg {...iconProps}>
+                  <path d="M12 2v4" />
+                  <path d="M12 18v4" />
+                  <path d="m4.93 4.93 2.83 2.83" />
+                  <path d="m16.24 16.24 2.83 2.83" />
+                  <path d="M2 12h4" />
+                  <path d="M18 12h4" />
+                  <path d="m4.93 19.07 2.83-2.83" />
+                  <path d="m16.24 7.76 2.83-2.83" />
+                </svg>
+              }
+            >
+              AI GENERATING...
+            </ActionLabel>
+          ) : (
+            <ActionLabel
+              icon={
+                <svg {...iconProps}>
+                  <path d="M9 18V5l12-2v13" />
+                  <path d="M9 9 21 7" />
+                  <circle cx="6" cy="18" r="3" />
+                  <circle cx="18" cy="16" r="3" />
+                </svg>
+              }
+            >
+              TRY THE COMBI ON
+            </ActionLabel>
+          )}
         </button>
 
         {dressedAvatar && (
@@ -73,7 +133,17 @@ const WardrobeActions = ({
                 fontWeight: "bold",
               }}
             >
-              SAVE LOOK (.PNG)
+              <ActionLabel
+                icon={
+                  <svg {...iconProps}>
+                    <path d="M19 21H5a2 2 0 0 1-2-2V5a2 2 0 0 1 2-2h11l5 5v11a2 2 0 0 1-2 2Z" />
+                    <path d="M17 21v-8H7v8" />
+                    <path d="M7 3v5h8" />
+                  </svg>
+                }
+              >
+                SAVE LOOK (.PNG)
+              </ActionLabel>
             </button>
 
             <button
@@ -88,7 +158,17 @@ const WardrobeActions = ({
                 boxShadow: "4px 4px 0px black",
               }}
             >
-              ARCHIVE LOOK
+              <ActionLabel
+                icon={
+                  <svg {...iconProps}>
+                    <rect x="3" y="4" width="18" height="4" rx="1" />
+                    <path d="M5 8v11a2 2 0 0 0 2 2h10a2 2 0 0 0 2-2V8" />
+                    <path d="M10 12h4" />
+                  </svg>
+                }
+              >
+                ARCHIVE LOOK
+              </ActionLabel>
             </button>
 
             <button
@@ -101,7 +181,16 @@ const WardrobeActions = ({
                 border: "1px solid black",
               }}
             >
-              RESET TO ORIGINAL
+              <ActionLabel
+                icon={
+                  <svg {...iconProps}>
+                    <path d="M3 12a9 9 0 1 0 3-6.7" />
+                    <path d="M3 3v6h6" />
+                  </svg>
+                }
+              >
+                RESET TO ORIGINAL
+              </ActionLabel>
             </button>
           </>
         )}
@@ -117,7 +206,20 @@ const WardrobeActions = ({
             fontSize: "11px",
           }}
         >
-          RE-SCAN MODEL
+          <ActionLabel
+            icon={
+              <svg {...iconProps}>
+                <path d="M3 7V5a2 2 0 0 1 2-2h2" />
+                <path d="M17 3h2a2 2 0 0 1 2 2v2" />
+                <path d="M21 17v2a2 2 0 0 1-2 2h-2" />
+                <path d="M7 21H5a2 2 0 0 1-2-2v-2" />
+                <path d="M8 12h8" />
+                <path d="M12 8v8" />
+              </svg>
+            }
+          >
+            RE-SCAN MODEL
+          </ActionLabel>
         </button>
       </div>
     </div>
