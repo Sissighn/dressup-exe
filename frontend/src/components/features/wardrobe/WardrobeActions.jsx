@@ -73,7 +73,7 @@ const WardrobeActions = ({
                 fontWeight: "bold",
               }}
             >
-              💾 SAVE LOOK (.PNG)
+              SAVE LOOK (.PNG)
             </button>
 
             <button
@@ -88,7 +88,7 @@ const WardrobeActions = ({
                 boxShadow: "4px 4px 0px black",
               }}
             >
-              🗄️ ARCHIVE LOOK
+              ARCHIVE LOOK
             </button>
 
             <button
