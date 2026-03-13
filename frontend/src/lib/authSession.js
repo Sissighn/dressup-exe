@@ -41,8 +41,23 @@ export const getSessionScope = (session = getAuthSession()) => {
 export const scopedStorageKey = (key, session = getAuthSession()) =>
   `dressup:${getSessionScope(session)}:${key}`;
 
-export const getScopedItem = (key, session = getAuthSession()) =>
-  localStorage.getItem(scopedStorageKey(key, session));
+export const getScopedItem = (key, session = getAuthSession()) => {
+  const scopedKey = scopedStorageKey(key, session);
+  const scopedValue = localStorage.getItem(scopedKey);
+  if (scopedValue !== null) {
+    return scopedValue;
+  }
+
+  // One-time migration from legacy global keys
+  const legacyValue = localStorage.getItem(key);
+  if (legacyValue !== null) {
+    localStorage.setItem(scopedKey, legacyValue);
+    localStorage.removeItem(key);
+    return legacyValue;
+  }
+
+  return null;
+};
 
 export const setScopedItem = (key, value, session = getAuthSession()) =>
   localStorage.setItem(scopedStorageKey(key, session), value);
