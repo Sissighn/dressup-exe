@@ -14,6 +14,7 @@ import {
   clearScopedUserLocalData,
   setScopedItem,
   removeScopedItem,
+  getScopedItem,
 } from "./lib/authSession";
 
 function App() {
@@ -26,6 +27,20 @@ function App() {
     }
   });
   const [isCheckingSession, setIsCheckingSession] = useState(true);
+  const [profileImage, setProfileImage] = useState(() =>
+    getScopedItem("userProfileImage", session),
+  );
+
+  useEffect(() => {
+    const syncProfileImage = () => {
+      if (!session) return;
+      setProfileImage(getScopedItem("userProfileImage", session) || "");
+    };
+
+    window.addEventListener("profile-image-updated", syncProfileImage);
+    return () =>
+      window.removeEventListener("profile-image-updated", syncProfileImage);
+  }, [session]);
 
   useEffect(() => {
     const validateSession = async () => {
@@ -44,6 +59,7 @@ function App() {
         if (!response.ok) {
           localStorage.removeItem(AUTH_STORAGE_KEY);
           setSession(null);
+          setProfileImage("");
         } else if (session?.user?.role === "user") {
           const profileResponse = await fetch(`${API_BASE}/profile`, {
             headers: {
@@ -59,6 +75,15 @@ function App() {
             } else {
               removeScopedItem("userAvatar", session);
             }
+
+            const nextProfileImage =
+              profile.face_scan_url || profile.avatar_url || "";
+            if (nextProfileImage) {
+              setScopedItem("userProfileImage", nextProfileImage, session);
+            } else {
+              removeScopedItem("userProfileImage", session);
+            }
+            setProfileImage(nextProfileImage);
 
             if (profile.display_name) {
               setScopedItem("userName", profile.display_name, session);
@@ -77,10 +102,13 @@ function App() {
               session,
             );
           }
+        } else {
+          setProfileImage("");
         }
       } catch {
         localStorage.removeItem(AUTH_STORAGE_KEY);
         setSession(null);
+        setProfileImage("");
       } finally {
         setIsCheckingSession(false);
       }
@@ -92,6 +120,9 @@ function App() {
   const handleAuthSuccess = (nextSession) => {
     if (nextSession?.user?.role === "guest") {
       clearScopedUserLocalData(nextSession);
+      setProfileImage("");
+    } else {
+      setProfileImage(getScopedItem("userProfileImage", nextSession) || "");
     }
     localStorage.setItem(AUTH_STORAGE_KEY, JSON.stringify(nextSession));
     setSession(nextSession);
@@ -103,6 +134,7 @@ function App() {
     }
     localStorage.removeItem(AUTH_STORAGE_KEY);
     setSession(null);
+    setProfileImage("");
   };
 
   if (isCheckingSession) {
@@ -115,7 +147,11 @@ function App() {
 
   return (
     <Router>
-      <MainLayout onLogout={handleLogout} authUser={session.user}>
+      <MainLayout
+        onLogout={handleLogout}
+        authUser={session.user}
+        profileImage={profileImage}
+      >
         <Routes>
           <Route path="/" element={<Wardrobe />} />
           <Route path="/avatar" element={<Avatar />} />
