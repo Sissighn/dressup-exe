@@ -33,7 +33,11 @@ const MainLayout = ({ children, onLogout, authUser, profileImage }) => {
 
   return (
     <div className="app-container">
-      <Header onLogout={onLogout} authUser={authUser} profileImage={profileImage} />
+      <Header
+        onLogout={onLogout}
+        authUser={authUser}
+        profileImage={profileImage}
+      />
       {children}
       <div className="footer-bar">
         <span>PAGE: {currentPage}</span>

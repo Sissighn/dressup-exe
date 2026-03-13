@@ -4,6 +4,7 @@ export const API_BASE = "http://localhost:8000";
 export const USER_LOCAL_KEYS = [
   "userBiometrics",
   "userAvatar",
+  "userProfileImage",
   "userName",
   "selectedTop",
   "selectedBottom",
