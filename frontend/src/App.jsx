@@ -11,7 +11,7 @@ import Auth from "./pages/Auth";
 import {
   AUTH_STORAGE_KEY,
   API_BASE,
-  clearUserLocalData,
+  clearScopedUserLocalData,
 } from "./lib/authSession";
 
 function App() {
@@ -55,13 +55,17 @@ function App() {
   }, [session?.token]);
 
   const handleAuthSuccess = (nextSession) => {
-    clearUserLocalData();
+    if (nextSession?.user?.role === "guest") {
+      clearScopedUserLocalData(nextSession);
+    }
     localStorage.setItem(AUTH_STORAGE_KEY, JSON.stringify(nextSession));
     setSession(nextSession);
   };
 
   const handleLogout = () => {
-    clearUserLocalData();
+    if (session?.user?.role === "guest") {
+      clearScopedUserLocalData(session);
+    }
     localStorage.removeItem(AUTH_STORAGE_KEY);
     setSession(null);
   };
