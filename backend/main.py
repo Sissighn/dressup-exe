@@ -62,6 +62,25 @@ def _ensure_schema_migrations():
                 text("ALTER TABLE clothes ADD COLUMN owner_key VARCHAR DEFAULT ''")
             )
 
+        user_columns = conn.execute(text("PRAGMA table_info(users)")).fetchall()
+        user_column_names = {row[1] for row in user_columns}
+        user_profile_fields = [
+            ("display_name", "VARCHAR", "''"),
+            ("avatar_url", "VARCHAR", "''"),
+            ("gender", "VARCHAR", "''"),
+            ("height", "VARCHAR", "''"),
+            ("weight", "VARCHAR", "''"),
+            ("body_type", "VARCHAR", "''"),
+        ]
+
+        for field_name, field_type, field_default in user_profile_fields:
+            if field_name not in user_column_names:
+                conn.execute(
+                    text(
+                        f"ALTER TABLE users ADD COLUMN {field_name} {field_type} DEFAULT {field_default}"
+                    )
+                )
+
 
 _ensure_schema_migrations()
 
@@ -74,6 +93,15 @@ ACCESS_TOKEN_EXPIRES_HOURS = 24
 class AuthRequest(BaseModel):
     email: str
     password: str
+
+
+class ProfileUpdateRequest(BaseModel):
+    display_name: Optional[str] = None
+    gender: Optional[str] = None
+    height: Optional[str] = None
+    weight: Optional[str] = None
+    body_type: Optional[str] = None
+    avatar_url: Optional[str] = None
 
 
 def _b64url_encode(data: bytes) -> str:
@@ -204,6 +232,12 @@ def _get_current_actor(authorization: Optional[str] = Header(default=None)):
     return {"subject": subject, "role": role, "owner_key": owner_key}
 
 
+def _get_user_for_actor(actor: dict, db: Session) -> Optional[User]:
+    if actor.get("role") != "user":
+        return None
+    return db.query(User).filter(User.email == actor.get("subject", "")).first()
+
+
 @app.post("/auth/register")
 def register(auth: AuthRequest, db: Session = Depends(get_db)):
     email = _normalize_email(auth.email)
@@ -278,6 +312,70 @@ def auth_me(authorization: Optional[str] = Header(default=None)):
     return {
         "email": subject if role == "user" else "guest@local",
         "role": role,
+    }
+
+
+@app.get("/profile")
+def get_profile(actor=Depends(_get_current_actor), db: Session = Depends(get_db)):
+    user = _get_user_for_actor(actor, db)
+    if not user:
+        return {
+            "display_name": "",
+            "avatar_url": "",
+            "gender": "",
+            "height": "",
+            "weight": "",
+            "body_type": "",
+        }
+
+    return {
+        "display_name": user.display_name or "",
+        "avatar_url": user.avatar_url or "",
+        "gender": user.gender or "",
+        "height": user.height or "",
+        "weight": user.weight or "",
+        "body_type": user.body_type or "",
+    }
+
+
+@app.put("/profile")
+def update_profile(
+    payload: ProfileUpdateRequest,
+    actor=Depends(_get_current_actor),
+    db: Session = Depends(get_db),
+):
+    user = _get_user_for_actor(actor, db)
+    if not user:
+        raise HTTPException(
+            status_code=403, detail="Guests cannot persist profile data."
+        )
+
+    updates = payload.model_dump(exclude_unset=True)
+    for field in [
+        "display_name",
+        "avatar_url",
+        "gender",
+        "height",
+        "weight",
+        "body_type",
+    ]:
+        if field in updates:
+            setattr(user, field, updates[field] or "")
+
+    db.add(user)
+    db.commit()
+    db.refresh(user)
+
+    return {
+        "status": "success",
+        "profile": {
+            "display_name": user.display_name or "",
+            "avatar_url": user.avatar_url or "",
+            "gender": user.gender or "",
+            "height": user.height or "",
+            "weight": user.weight or "",
+            "body_type": user.body_type or "",
+        },
     }
 
 
@@ -455,6 +553,7 @@ async def generate_avatar(
     weight: str = Form(...),
     body_type: str = Form(...),
     gender: str = Form(...),  # NEU: "male" oder "female"
+    db: Session = Depends(get_db),
     actor=Depends(_get_current_actor),
 ):
     try:
@@ -476,6 +575,16 @@ async def generate_avatar(
         )
 
         if result["success"]:
+            user = _get_user_for_actor(actor, db)
+            if user and result.get("avatar_url"):
+                user.avatar_url = result.get("avatar_url", "")
+                user.display_name = display_name or ""
+                user.gender = gender or ""
+                user.height = height or ""
+                user.weight = weight or ""
+                user.body_type = body_type or ""
+                db.add(user)
+                db.commit()
             return {"status": "success", "data": result}
         raise HTTPException(
             status_code=422,
