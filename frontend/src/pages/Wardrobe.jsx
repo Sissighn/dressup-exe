@@ -5,7 +5,13 @@ import "../components/features/wardrobe/wardrobe.css";
 import WardrobeActions from "../components/features/wardrobe/WardrobeActions";
 import AvatarDisplay from "../components/features/wardrobe/AvatarDisplay";
 import ClothingSelector from "../components/features/wardrobe/ClothingSelector";
-import { authFetch } from "../lib/authSession";
+import {
+  authFetch,
+  getAuthSession,
+  getScopedItem,
+  setScopedItem,
+  removeScopedItem,
+} from "../lib/authSession";
 
 const Wardrobe = () => {
   const navigate = useNavigate();
@@ -19,41 +25,42 @@ const Wardrobe = () => {
 
   // --- PERSISTENZ-LOGIK: Initialisierung aus localStorage ---
   const [selectedTop, setSelectedTop] = useState(() => {
-    const saved = localStorage.getItem("selectedTop");
+    const saved = getScopedItem("selectedTop", getAuthSession());
     return saved ? JSON.parse(saved) : null;
   });
   const [selectedBottom, setSelectedBottom] = useState(() => {
-    const saved = localStorage.getItem("selectedBottom");
+    const saved = getScopedItem("selectedBottom", getAuthSession());
     return saved ? JSON.parse(saved) : null;
   });
   const [dressedAvatar, setDressedAvatar] = useState(() => {
-    return localStorage.getItem("dressedAvatar") || null;
+    return getScopedItem("dressedAvatar", getAuthSession()) || null;
   });
 
   const [isGenerating, setIsGenerating] = useState(false);
 
   // --- SYNC: Änderungen im localStorage speichern ---
   useEffect(() => {
+    const session = getAuthSession();
     if (selectedTop) {
-      localStorage.setItem("selectedTop", JSON.stringify(selectedTop));
+      setScopedItem("selectedTop", JSON.stringify(selectedTop), session);
     } else {
-      localStorage.removeItem("selectedTop");
+      removeScopedItem("selectedTop", session);
     }
     if (selectedBottom) {
-      localStorage.setItem("selectedBottom", JSON.stringify(selectedBottom));
+      setScopedItem("selectedBottom", JSON.stringify(selectedBottom), session);
     } else {
-      localStorage.removeItem("selectedBottom");
+      removeScopedItem("selectedBottom", session);
     }
     if (dressedAvatar) {
-      localStorage.setItem("dressedAvatar", dressedAvatar);
+      setScopedItem("dressedAvatar", dressedAvatar, session);
     } else {
-      localStorage.removeItem("dressedAvatar");
+      removeScopedItem("dressedAvatar", session);
     }
   }, [selectedTop, selectedBottom, dressedAvatar]);
 
   // Avatar und Kleidung beim Laden initialisieren
   useEffect(() => {
-    const savedAvatar = localStorage.getItem("userAvatar");
+    const savedAvatar = getScopedItem("userAvatar", getAuthSession());
     if (savedAvatar) {
       // Wir hängen einen Zeitstempel an, um den Cache zu umgehen
       const cacheBusterUrl = savedAvatar.includes("?")
