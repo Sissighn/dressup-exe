@@ -2,7 +2,7 @@ import React from "react";
 import { NavLink } from "react-router-dom";
 import "./header.css"; // Pass den Pfad bei Bedarf an
 
-const Header = () => {
+const Header = ({ onLogout, authUser }) => {
   // Die Funktion für className sorgt dafür, dass React Router v6 die 'active' Klasse korrekt setzt
   const getNavLinkClass = ({ isActive }) =>
     "nav-item" + (isActive ? " active" : "");
@@ -27,6 +27,16 @@ const Header = () => {
           ABOUT
         </NavLink>
       </nav>
+      <div className="session-area">
+        <span className="session-user">
+          {authUser?.role === "guest"
+            ? "GUEST MODE"
+            : (authUser?.email || "USER").toUpperCase()}
+        </span>
+        <button className="logout-btn" onClick={onLogout} type="button">
+          LOGOUT
+        </button>
+      </div>
     </header>
   );
 };
