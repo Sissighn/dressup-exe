@@ -10,7 +10,7 @@ const PAGE_NAMES = {
   "/about": "ABOUT",
 };
 
-const MainLayout = ({ children, onLogout, authUser }) => {
+const MainLayout = ({ children, onLogout, authUser, profileImage }) => {
   const location = useLocation();
   const [time, setTime] = useState(new Date());
 
@@ -33,7 +33,7 @@ const MainLayout = ({ children, onLogout, authUser }) => {
 
   return (
     <div className="app-container">
-      <Header onLogout={onLogout} authUser={authUser} />
+      <Header onLogout={onLogout} authUser={authUser} profileImage={profileImage} />
       {children}
       <div className="footer-bar">
         <span>PAGE: {currentPage}</span>
