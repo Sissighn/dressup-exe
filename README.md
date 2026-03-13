@@ -68,37 +68,47 @@ database/
 
 ## Local Development Setup
 
-## 1) Clone
+### 1) Clone
 
+```bash
 git clone https://github.com/Sissighn/dressup-exe.git
 cd dressup-exe
+```
 
-## 2) Backend setup
+### 2) Backend setup
 
+```bash
 cd backend
 python -m venv venv
 source venv/bin/activate
 
 pip install fastapi uvicorn sqlalchemy python-dotenv pillow python-multipart google-genai
+```
 
-## 3) Environment variables
+### 3) Environment variables
 
 Create a `.env` file in `backend/`:
 
+```bash
 GOOGLE_API_KEY=your_google_ai_key_here
+```
 
-## 4) Run backend
+### 4) Run backend
 
+```bash
 uvicorn main:app --reload --port 8000
+```
 
-## 5) Run frontend (new terminal)
+### 5) Run frontend (new terminal)
 
+```bash
 cd frontend
 npm install
 npm run dev
 
-Frontend: http://localhost:5173  
+Frontend: http://localhost:5173
 Backend: http://localhost:8000
+```
 
 ---
 
