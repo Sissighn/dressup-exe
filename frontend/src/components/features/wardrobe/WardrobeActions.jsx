@@ -74,7 +74,7 @@ const WardrobeActions = ({
         }}
       >
         <button
-          className="action-button"
+          className="action-button wardrobe-action-button"
           onClick={onTryOn}
           disabled={!selectedTop || !selectedBottom || isGenerating}
           style={{
@@ -121,7 +121,7 @@ const WardrobeActions = ({
         {dressedAvatar && (
           <>
             <button
-              className="action-button"
+              className="action-button wardrobe-action-button"
               onClick={onArchive}
               style={{
                 ...baseButtonStyle,
@@ -129,7 +129,6 @@ const WardrobeActions = ({
                 color: "black",
                 border: "2px solid black",
                 fontWeight: "bold",
-                boxShadow: "4px 4px 0px black",
               }}
             >
               <ActionLabel
@@ -146,7 +145,7 @@ const WardrobeActions = ({
             </button>
 
             <button
-              className="action-button"
+              className="action-button wardrobe-action-button"
               onClick={onDownload}
               style={{
                 ...baseButtonStyle,
@@ -170,7 +169,7 @@ const WardrobeActions = ({
             </button>
 
             <button
-              className="action-button"
+              className="action-button wardrobe-action-button"
               onClick={onReset}
               style={{
                 ...baseButtonStyle,
@@ -194,7 +193,7 @@ const WardrobeActions = ({
         )}
 
         <button
-          className="action-button"
+          className="action-button wardrobe-action-button"
           onClick={onRescan}
           style={{
             ...baseButtonStyle,
