@@ -27,6 +27,14 @@ const Avatar = () => {
   const [faceFile, setFaceFile] = useState(null);
 
   const [isProcessing, setIsProcessing] = useState(false);
+  const [validationErrors, setValidationErrors] = useState({
+    name: false,
+    height: false,
+    weight: false,
+    face: false,
+  });
+  const [showValidationModal, setShowValidationModal] = useState(false);
+  const [modalMessage, setModalMessage] = useState("");
   const faceInputRef = useRef(null);
 
   useEffect(() => {
@@ -41,6 +49,16 @@ const Avatar = () => {
     const newData = { ...formData, [e.target.name]: e.target.value };
     setFormData(newData);
     setScopedItem("userBiometrics", JSON.stringify(newData), getAuthSession());
+
+    if (e.target.name === "name" && e.target.value.trim()) {
+      setValidationErrors((prev) => ({ ...prev, name: false }));
+    }
+    if (e.target.name === "height" && e.target.value) {
+      setValidationErrors((prev) => ({ ...prev, height: false }));
+    }
+    if (e.target.name === "weight" && e.target.value) {
+      setValidationErrors((prev) => ({ ...prev, weight: false }));
+    }
   };
 
   const handleFileChange = (event) => {
@@ -48,12 +66,26 @@ const Avatar = () => {
     if (file) {
       setFaceImage(URL.createObjectURL(file));
       setFaceFile(file);
+      setValidationErrors((prev) => ({ ...prev, face: false }));
     }
   };
 
   const handleGenerate = async () => {
-    if (!faceFile || !formData.name) {
-      alert("PLEASE UPLOAD A FACE SCAN AND ENTER NAME.");
+    const nextErrors = {
+      name: !formData.name.trim(),
+      height: !formData.height,
+      weight: !formData.weight,
+      face: !faceFile,
+    };
+
+    const hasErrors = Object.values(nextErrors).some(Boolean);
+    setValidationErrors(nextErrors);
+
+    if (hasErrors) {
+      setModalMessage(
+        "Please fill DISPLAY NAME, HEIGHT, WEIGHT and upload a FACE SCAN before generating.",
+      );
+      setShowValidationModal(true);
       return;
     }
 
@@ -85,18 +117,21 @@ const Avatar = () => {
           }
           navigate("/");
         } else {
-          alert(
+          setModalMessage(
             result.message ||
               result.error ||
-              "Fehler: Keine Avatar URL erhalten.",
+              "Avatar generation failed. Please try again.",
           );
+          setShowValidationModal(true);
         }
       } else {
-        alert(result.detail || result.message || "Server Error.");
+        setModalMessage(result.detail || result.message || "Server error.");
+        setShowValidationModal(true);
       }
     } catch (error) {
       console.error("Error:", error);
-      alert("Connection Failed.");
+      setModalMessage("Connection failed. Please check backend and try again.");
+      setShowValidationModal(true);
     } finally {
       setIsProcessing(false);
     }
@@ -117,13 +152,18 @@ const Avatar = () => {
       <div
         style={{ display: "grid", gridTemplateColumns: "1fr 1fr", gap: "4rem" }}
       >
-        <BiometricsForm formData={formData} onInputChange={handleInputChange} />
+        <BiometricsForm
+          formData={formData}
+          onInputChange={handleInputChange}
+          validation={validationErrors}
+        />
 
         <FaceScanUpload
           faceImage={faceImage}
           isProcessing={isProcessing}
           onUploadClick={() => faceInputRef.current.click()}
           onGenerate={handleGenerate}
+          showUploadError={validationErrors.face}
         />
         <input
           type="file"
@@ -133,6 +173,30 @@ const Avatar = () => {
           accept="image/*"
         />
       </div>
+
+      {showValidationModal && (
+        <div
+          className="avatar-validation-overlay"
+          onClick={() => setShowValidationModal(false)}
+        >
+          <div
+            className="avatar-validation-modal"
+            onClick={(e) => e.stopPropagation()}
+          >
+            <h2 style={{ marginTop: 0 }}>ACTION REQUIRED</h2>
+            <p style={{ margin: "16px 0", fontWeight: "bold" }}>
+              {modalMessage}
+            </p>
+            <button
+              className="action-button"
+              onClick={() => setShowValidationModal(false)}
+              style={{ width: "100%", background: "black", color: "white" }}
+            >
+              OK, GOT IT
+            </button>
+          </div>
+        </div>
+      )}
     </div>
   );
 };

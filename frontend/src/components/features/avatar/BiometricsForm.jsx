@@ -1,6 +1,6 @@
 import React from "react";
 
-const BiometricsForm = ({ formData, onInputChange }) => {
+const BiometricsForm = ({ formData, onInputChange, validation }) => {
   return (
     <div className="form-section">
       <h3
@@ -41,7 +41,9 @@ const BiometricsForm = ({ formData, onInputChange }) => {
             style={{
               width: "100%",
               padding: "10px",
-              border: "1px solid black",
+              border: validation?.name
+                ? "2px solid #d90429"
+                : "1px solid black",
               height: "41px",
               boxSizing: "border-box",
             }}
@@ -105,7 +107,9 @@ const BiometricsForm = ({ formData, onInputChange }) => {
             style={{
               width: "100%",
               padding: "10px",
-              border: "1px solid black",
+              border: validation?.height
+                ? "2px solid #d90429"
+                : "1px solid black",
               height: "41px",
               boxSizing: "border-box",
             }}
@@ -131,7 +135,9 @@ const BiometricsForm = ({ formData, onInputChange }) => {
             style={{
               width: "100%",
               padding: "10px",
-              border: "1px solid black",
+              border: validation?.weight
+                ? "2px solid #d90429"
+                : "1px solid black",
               height: "41px",
               boxSizing: "border-box",
             }}

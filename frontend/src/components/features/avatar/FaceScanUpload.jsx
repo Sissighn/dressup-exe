@@ -5,6 +5,7 @@ const FaceScanUpload = ({
   isProcessing,
   onUploadClick,
   onGenerate,
+  showUploadError,
 }) => {
   return (
     <div className="upload-section">
@@ -22,7 +23,7 @@ const FaceScanUpload = ({
         className="upload-box"
         onClick={onUploadClick}
         style={{
-          border: "1px dashed black",
+          border: showUploadError ? "2px dashed #d90429" : "1px dashed black",
           height: "200px",
           display: "flex",
           alignItems: "center",
