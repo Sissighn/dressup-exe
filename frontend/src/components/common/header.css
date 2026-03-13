@@ -46,3 +46,33 @@
   background-color: var(--accent-yellow);
   font-weight: 600;
 }
+
+.session-area {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  padding: 0 12px;
+  border-left: 1px solid var(--border-color);
+  background: #fff;
+}
+
+.session-user {
+  font-size: 0.72rem;
+  font-weight: 700;
+  letter-spacing: 0.6px;
+  white-space: nowrap;
+}
+
+.logout-btn {
+  height: 34px;
+  padding: 0 12px;
+  border: 1px solid var(--border-color);
+  background: #fff;
+  font-size: 0.72rem;
+  font-weight: 800;
+  cursor: pointer;
+}
+
+.logout-btn:hover {
+  background: var(--accent-pink);
+}
