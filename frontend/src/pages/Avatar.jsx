@@ -3,6 +3,7 @@ import { useNavigate } from "react-router-dom";
 import "../components/features/avatar/avatar.css";
 import BiometricsForm from "../components/features/avatar/BiometricsForm";
 import FaceScanUpload from "../components/features/avatar/FaceScanUpload";
+import { authFetch } from "../lib/authSession";
 
 const Avatar = () => {
   const navigate = useNavigate();
@@ -61,7 +62,7 @@ const Avatar = () => {
     payload.append("body_type", formData.bodyType);
 
     try {
-      const response = await fetch("http://localhost:8000/generate-avatar", {
+      const response = await authFetch("/generate-avatar", {
         method: "POST",
         body: payload,
       });
