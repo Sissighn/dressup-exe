@@ -67,6 +67,7 @@ def _ensure_schema_migrations():
         user_profile_fields = [
             ("display_name", "VARCHAR", "''"),
             ("avatar_url", "VARCHAR", "''"),
+            ("face_scan_url", "VARCHAR", "''"),
             ("gender", "VARCHAR", "''"),
             ("height", "VARCHAR", "''"),
             ("weight", "VARCHAR", "''"),
@@ -102,6 +103,7 @@ class ProfileUpdateRequest(BaseModel):
     weight: Optional[str] = None
     body_type: Optional[str] = None
     avatar_url: Optional[str] = None
+    face_scan_url: Optional[str] = None
 
 
 def _b64url_encode(data: bytes) -> str:
@@ -322,6 +324,7 @@ def get_profile(actor=Depends(_get_current_actor), db: Session = Depends(get_db)
         return {
             "display_name": "",
             "avatar_url": "",
+            "face_scan_url": "",
             "gender": "",
             "height": "",
             "weight": "",
@@ -331,6 +334,7 @@ def get_profile(actor=Depends(_get_current_actor), db: Session = Depends(get_db)
     return {
         "display_name": user.display_name or "",
         "avatar_url": user.avatar_url or "",
+        "face_scan_url": user.face_scan_url or "",
         "gender": user.gender or "",
         "height": user.height or "",
         "weight": user.weight or "",
@@ -354,6 +358,7 @@ def update_profile(
     for field in [
         "display_name",
         "avatar_url",
+        "face_scan_url",
         "gender",
         "height",
         "weight",
@@ -371,6 +376,7 @@ def update_profile(
         "profile": {
             "display_name": user.display_name or "",
             "avatar_url": user.avatar_url or "",
+            "face_scan_url": user.face_scan_url or "",
             "gender": user.gender or "",
             "height": user.height or "",
             "weight": user.weight or "",
@@ -564,6 +570,8 @@ async def generate_avatar(
         with open(face_path, "wb") as f:
             shutil.copyfileobj(face_scan.file, f)
 
+        face_scan_url = f"http://localhost:8000/uploads/{os.path.basename(face_path)}"
+
         # Wir geben gender an die services weiter
         result = await services.try_gemini_generation(
             face_path,
@@ -575,9 +583,11 @@ async def generate_avatar(
         )
 
         if result["success"]:
+            result["face_scan_url"] = face_scan_url
             user = _get_user_for_actor(actor, db)
             if user and result.get("avatar_url"):
                 user.avatar_url = result.get("avatar_url", "")
+                user.face_scan_url = face_scan_url
                 user.display_name = display_name or ""
                 user.gender = gender or ""
                 user.height = height or ""
