@@ -16,26 +16,25 @@ const ClothingSelector = ({
         &lt;
       </button>
       {currentItem ? (
-        <div style={{ textAlign: "center" }}>
+        <div
+          style={{
+            textAlign: "center",
+            display: "flex",
+            flexDirection: "column",
+            alignItems: "center",
+            justifyContent: "center",
+            gap: "8px",
+          }}
+        >
           <img
             src={currentItem.image_path}
             alt={currentItem.name}
             style={{ height: "120px", objectFit: "contain" }}
           />
-          <p
-            style={{
-              fontSize: "10px",
-              fontWeight: "bold",
-              marginTop: "5px",
-            }}
-          >
-            {currentItem.name}
-          </p>
           <button
             onClick={() => onSelect(currentItem)}
             style={{
               fontSize: "10px",
-              marginTop: "5px",
               padding: "5px 12px",
               cursor: "pointer",
               background:
