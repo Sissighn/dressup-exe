@@ -70,6 +70,36 @@
   overflow: hidden;
 }
 
+.clothing-selector-card {
+  width: 100%;
+  max-width: 210px;
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  justify-content: center;
+  gap: 12px;
+  padding: 20px 0;
+  box-sizing: border-box;
+}
+
+.clothing-preview-image {
+  height: 155px;
+  max-width: 100%;
+  object-fit: contain;
+  display: block;
+}
+
+.clothing-select-button {
+  min-width: 96px;
+  min-height: 32px;
+  padding: 6px 14px;
+  font-size: 10px;
+  font-weight: 700;
+  cursor: pointer;
+  border: 1px solid black;
+  box-sizing: border-box;
+}
+
 .clothing-section:last-child {
   border-bottom: none;
 }
