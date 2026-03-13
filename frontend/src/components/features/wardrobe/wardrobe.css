@@ -46,11 +46,21 @@
 .center-panel {
   background-color: #f0f0f0; /* Studio Grau */
   display: flex;
-  align-items: flex-end; /* Avatar steht unten */
+  align-items: center;
   justify-content: center;
   border-right: 1px solid var(--border-color);
   position: relative;
   overflow: hidden;
+}
+
+.center-panel .avatar-image-display {
+  width: auto;
+  height: auto;
+  max-height: 92%;
+  max-width: 92%;
+  object-fit: contain;
+  object-position: center;
+  filter: drop-shadow(0px 10px 20px rgba(0, 0, 0, 0.3));
 }
 
 /* 3. Rechte Spalte: Kleidung (Split View) */
