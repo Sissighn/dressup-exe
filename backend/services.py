@@ -259,12 +259,14 @@ async def try_gemini_outfit_generation(avatar_path, top_path, bottom_path):
         top_img = Image.open(top_path)
         bottom_img = Image.open(bottom_path)
 
-        # Dein Original-Prompt
+        # Enforce a single-subject try-on result (no split screen / no duplicate person)
         prompt = (
-            "STRICT MANDATE: Generate ONLY a 9:16 portrait image (1080x1920). Maintain the full-body framing."
-            "Do not follow the aspect ratio of the input images if they are square. "
-            "Maintain the exact full-body framing of IMAGE 1 but replace clothes. "
-            "The final image must be tall and vertical (portrait) from head to toes."
+            "STRICT MANDATE: Generate ONLY ONE PERSON in a single 9:16 portrait image (1080x1920). "
+            "Do NOT create split-screen, side-by-side, before/after, collage, mirror duplicate, or multiple people. "
+            "Use IMAGE 1 as the identity and pose reference. Replace clothing with garments inspired by IMAGE 2 (top) and IMAGE 3 (bottom). "
+            "Keep full-body framing from head to toes. "
+            "Background must be clean and neutral. "
+            "Output must be one single full-body avatar only."
         )
 
         response = client.models.generate_content(
@@ -290,6 +292,50 @@ async def try_gemini_outfit_generation(avatar_path, top_path, bottom_path):
 
         # Format fixieren
         resize_to_target(outfit_filename, 1080, 1920)
+
+        # Validate single-subject output and apply one correction pass if needed
+        try:
+            with Image.open(outfit_filename) as generated_outfit:
+                validation = client.models.generate_content(
+                    model="gemini-2.5-flash",
+                    contents=[
+                        (
+                            "Answer with PASS or FAIL only. PASS only if this image contains exactly one person (single subject), "
+                            "not two people, no side-by-side comparison, no collage, and no split-screen layout."
+                        ),
+                        generated_outfit.copy(),
+                    ],
+                )
+
+            is_single_subject = (
+                (validation.text or "").strip().upper().startswith("PASS")
+            )
+
+            if not is_single_subject:
+                correction_prompt = (
+                    "Image editing task. Keep only ONE person in frame. "
+                    "Remove any second person, duplicate, mirror, split-screen, or before/after layout. "
+                    "Preserve the same main subject identity from IMAGE 1 and apply the outfit style from IMAGE 2 and IMAGE 3. "
+                    "Return a single full-body 1080x1920 portrait from head to toes on a clean neutral background."
+                )
+
+                with Image.open(outfit_filename) as generated_outfit:
+                    fixed_response = client.models.generate_content(
+                        model="gemini-2.5-flash-image",
+                        contents=[
+                            correction_prompt,
+                            generated_outfit.copy(),
+                            avatar_img,
+                            top_img,
+                            bottom_img,
+                        ],
+                    )
+
+                fixed_saved = save_generated_image(fixed_response, outfit_filename)
+                if fixed_saved:
+                    resize_to_target(outfit_filename, 1080, 1920)
+        except Exception as e:
+            print(f"⚠️ Single-subject validation skipped: {e}")
 
         return {
             "success": True,
