@@ -2,15 +2,12 @@
 
 ![GitHub repo size](https://img.shields.io/github/repo-size/Sissighn/dressup-exe?style=flat-square&color=1a1a1a)
 ![GitHub last commit](https://img.shields.io/github/last-commit/Sissighn/dressup-exe?style=flat-square&color=1a1a1a)
-![GitHub license](https://img.shields.io/github/license/Sissighn/dressup-exe?style=flat-square&color=1a1a1a)
-![GitHub stars](https://img.shields.io/github/stars/Sissighn/dressup-exe?style=flat-square&color=e8d489)
 
 ![Python](https://img.shields.io/badge/Python-3.11+-3776AB?style=flat-square&logo=python&logoColor=white)
 ![FastAPI](https://img.shields.io/badge/FastAPI-0.100+-009688?style=flat-square&logo=fastapi&logoColor=white)
 ![SQLite](https://img.shields.io/badge/SQLite-003B57?style=flat-square&logo=sqlite&logoColor=white)
 ![Pillow](https://img.shields.io/badge/Pillow-image%20processing-3776AB?style=flat-square&logo=python&logoColor=white)
 ![Google Gemini](https://img.shields.io/badge/Google%20Gemini-AI-4285F4?style=flat-square&logo=google&logoColor=white)
-
 ![React](https://img.shields.io/badge/React-19-61DAFB?style=flat-square&logo=react&logoColor=black)
 ![Vite](https://img.shields.io/badge/Vite-7-646CFF?style=flat-square&logo=vite&logoColor=white)
 ![React Router](https://img.shields.io/badge/React%20Router-v7-CA4245?style=flat-square&logo=reactrouter&logoColor=white)
