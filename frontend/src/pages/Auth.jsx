@@ -1,6 +1,7 @@
 import { useMemo, useState } from "react";
 import "./auth.css";
 import { API_BASE } from "../lib/authSession";
+import designImage from "../assets/design.png";
 
 const Auth = ({ onAuthSuccess }) => {
   const [mode, setMode] = useState("login");
@@ -118,6 +119,10 @@ const Auth = ({ onAuthSuccess }) => {
   return (
     <div className="auth-page">
       <div className="auth-shell">
+        <section className="auth-visual" aria-hidden="true">
+          <img src={designImage} alt="" className="auth-visual-image" />
+        </section>
+
         <section className="auth-preview">
           <p className="auth-kicker">WELCOME</p>
           <h1 className="auth-preview-title">dressup.exe</h1>

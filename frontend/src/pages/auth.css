@@ -8,10 +8,29 @@
 
 .auth-shell {
   width: 100%;
-  max-width: 980px;
+  max-width: 1320px;
   display: grid;
-  grid-template-columns: 1.2fr 1fr;
+  grid-template-columns: 0.9fr 1.15fr 1fr;
   gap: 18px;
+  align-items: stretch;
+}
+
+.auth-visual {
+  border: 2px solid var(--border-color);
+  background: #fff;
+  box-shadow: 10px 10px 0 var(--accent-pink);
+  padding: 16px;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+}
+
+.auth-visual-image {
+  width: 100%;
+  max-width: 360px;
+  height: auto;
+  object-fit: contain;
+  display: block;
 }
 
 .auth-preview {
@@ -304,6 +323,16 @@
 .auth-guest {
   background: #fff;
   color: #000;
+}
+
+@media (max-width: 1200px) {
+  .auth-shell {
+    grid-template-columns: 1fr 1fr;
+  }
+
+  .auth-visual {
+    grid-column: 1 / -1;
+  }
 }
 
 @media (max-width: 900px) {
