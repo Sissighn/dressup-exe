@@ -33,7 +33,7 @@ The project combines:
 - **Account-Scoped Data Isolation** for closet, lookbook, avatar, and profile state
 - **AI Avatar Generation** from biometric input (height, weight, body type, gender, face scan)
 - **AI Outfit Try-On** by compositing avatar + top + bottom references
-- **Digital Closet Management** (upload, categorize, browse, delete)
+- **Digital Closet Management** (upload, auto background removal, categorize, browse, delete)
 - **Lookbook Archive** for generated outfits with delete flow
 - **Strict Portrait Framing Pipeline** (9:16 / 1080x1920) with full-body validation retries
 - **Profile Avatar UX**: circle profile image in header (from uploaded face scan) with Wardrobe dropdown menu for logout
@@ -102,7 +102,7 @@ cd backend
 python -m venv venv
 source venv/bin/activate
 
-pip install fastapi uvicorn sqlalchemy python-dotenv pillow python-multipart google-genai
+pip install fastapi uvicorn sqlalchemy python-dotenv pillow python-multipart google-genai rembg onnxruntime
 ```
 
 ### 3) Environment variables
