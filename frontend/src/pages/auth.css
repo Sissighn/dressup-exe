@@ -1,18 +1,37 @@
 .auth-page {
   min-height: 100vh;
+  width: 100%;
   display: grid;
+  grid-template-columns: minmax(0, 1fr);
   place-items: center;
   background: var(--bg-paper);
-  padding: 24px;
+  padding: clamp(12px, 2.5vw, 24px);
+  box-sizing: border-box;
+  overflow-x: hidden;
 }
 
 .auth-shell {
-  width: 100%;
-  max-width: 1320px;
+  width: min(1320px, 100%);
   display: grid;
-  grid-template-columns: 0.9fr 1.15fr 1fr;
-  gap: 18px;
+  /* Das 'minmax(0, ...)' erlaubt den Spalten, schmaler als ihr Inhalt zu werden */
+  grid-template-columns: minmax(0, 0.9fr) minmax(0, 1.15fr) minmax(0, 1fr);
+  gap: clamp(
+    10px,
+    1.5vw,
+    18px
+  ); /* Gap wird bei kleinerem Browser auch kleiner */
   align-items: stretch;
+  margin: 0 auto;
+}
+
+.auth-shell > section {
+  width: 100%;
+  min-width: 0;
+  box-sizing: border-box;
+}
+
+.auth-shell * {
+  min-width: 0;
 }
 
 .auth-visual {
@@ -38,6 +57,7 @@
   border: 2px solid var(--border-color);
   box-shadow: 10px 10px 0 var(--accent-yellow);
   padding: 28px;
+  max-width: 100%;
 }
 
 .auth-kicker {
@@ -52,12 +72,14 @@
   font-family: var(--font-serif);
   font-style: italic;
   font-size: 2.5rem;
+  overflow-wrap: anywhere;
 }
 
 .auth-preview-subtitle {
   margin: 0 0 18px;
   line-height: 1.45;
   opacity: 0.85;
+  overflow-wrap: anywhere;
 }
 
 .auth-preview-demo {
@@ -71,6 +93,7 @@
   display: flex;
   justify-content: space-between;
   align-items: center;
+  gap: 8px;
   border-bottom: 1px solid var(--border-color);
   padding: 6px 10px;
   font-size: 0.68rem;
@@ -79,9 +102,14 @@
   background: var(--accent-yellow);
 }
 
+.auth-demo-topbar span {
+  min-width: 0;
+  overflow-wrap: anywhere;
+}
+
 .auth-demo-grid {
   display: grid;
-  grid-template-columns: 1fr 1fr;
+  grid-template-columns: repeat(2, minmax(0, 1fr));
   gap: 8px;
   padding: 10px;
   border-bottom: 1px solid var(--border-color);
@@ -99,6 +127,7 @@
   flex-direction: column;
   gap: 2px;
   min-height: 68px;
+  min-width: 0;
 }
 
 .auth-demo-step small {
@@ -110,11 +139,13 @@
 .auth-demo-step strong {
   font-size: 0.8rem;
   line-height: 1.2;
+  overflow-wrap: anywhere;
 }
 
 .auth-demo-step span {
   font-size: 0.68rem;
   opacity: 0.82;
+  overflow-wrap: anywhere;
 }
 
 .auth-demo-lookbook-strip {
@@ -196,12 +227,14 @@
   border: 2px solid var(--border-color);
   box-shadow: 10px 10px 0 var(--soft-black);
   padding: 28px;
+  max-width: 100%;
 }
 
 .auth-title {
   margin: 0;
   font-family: var(--font-serif);
   font-size: 2rem;
+  overflow-wrap: anywhere;
 }
 
 .auth-subtitle {
@@ -325,18 +358,114 @@
   color: #000;
 }
 
-@media (max-width: 1200px) {
+@media (max-width: 900px) {
   .auth-shell {
-    grid-template-columns: 1fr 1fr;
+    grid-template-columns: 1fr 1.2fr;
+    grid-template-areas:
+      "visual preview"
+      "visual card";
+  }
+
+  .auth-preview,
+  .auth-card {
+    padding: 22px;
   }
 
   .auth-visual {
-    grid-column: 1 / -1;
+    grid-area: visual;
+    align-self: stretch;
+    padding: 12px;
+  }
+
+  .auth-preview {
+    grid-area: preview;
+  }
+
+  .auth-card {
+    grid-area: card;
+  }
+
+  .auth-visual-image {
+    max-width: 300px;
   }
 }
 
-@media (max-width: 900px) {
+@media (max-width: 800px) {
   .auth-shell {
     grid-template-columns: 1fr;
+    grid-template-areas:
+      "preview"
+      "card"
+      "visual";
+    gap: 16px;
+  }
+
+  .auth-preview {
+    grid-area: preview;
+  }
+
+  .auth-card {
+    grid-area: card;
+  }
+
+  .auth-visual {
+    grid-area: visual;
+    min-height: 180px;
+    padding: 12px;
+  }
+
+  .auth-preview,
+  .auth-card,
+  .auth-visual {
+    box-shadow: 0 6px 0 var(--soft-black);
+  }
+
+  .auth-visual {
+    box-shadow: 0 6px 0 var(--accent-pink);
+  }
+
+  .auth-preview,
+  .auth-card {
+    padding: 18px;
+  }
+
+  .auth-visual-image {
+    max-width: 100px;
+    height: auto;
+  }
+}
+
+@media (max-width: 680px) {
+  .auth-shell {
+    max-width: 100%;
+    gap: 12px;
+  }
+
+  .auth-preview,
+  .auth-card,
+  .auth-visual {
+    box-shadow: 0 4px 0 var(--soft-black);
+  }
+
+  .auth-visual {
+    box-shadow: 0 4px 0 var(--accent-pink);
+  }
+
+  .auth-preview-title {
+    font-size: 2rem;
+  }
+
+  .auth-demo-topbar {
+    flex-direction: column;
+    align-items: flex-start;
+    gap: 2px;
+  }
+
+  .auth-demo-grid {
+    grid-template-columns: 1fr;
+  }
+
+  .auth-demo-look {
+    height: 64px;
   }
 }
