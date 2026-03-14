@@ -3,6 +3,11 @@ from io import BytesIO
 from PIL import Image, ImageEnhance, ImageFilter, ImageOps
 import base64
 
+try:
+    from rembg import remove as rembg_remove
+except ImportError:
+    rembg_remove = None
+
 # WICHTIG: Absoluter Pfad verwenden!
 BASE_DIR = os.path.dirname(os.path.abspath(__file__))
 UPLOAD_DIR = os.path.join(BASE_DIR, "uploads")
@@ -11,6 +16,35 @@ os.makedirs(UPLOAD_DIR, exist_ok=True)
 TARGET_WIDTH = 1080
 TARGET_HEIGHT = 1920
 MAX_AVATAR_ATTEMPTS = 8
+
+
+def remove_background_from_image(image_path):
+    """Removes the background from an uploaded clothing image and saves it as PNG.
+
+    Returns the final processed file path.
+    """
+    if rembg_remove is None:
+        raise RuntimeError("Background removal dependency is not installed.")
+
+    with Image.open(image_path) as source_image:
+        normalized = ImageOps.exif_transpose(source_image).convert("RGBA")
+        input_buffer = BytesIO()
+        normalized.save(input_buffer, format="PNG")
+
+    output_bytes = rembg_remove(input_buffer.getvalue())
+    output_image = Image.open(BytesIO(output_bytes)).convert("RGBA")
+
+    bounding_box = output_image.getbbox()
+    if bounding_box:
+        output_image = output_image.crop(bounding_box)
+
+    final_path = f"{os.path.splitext(image_path)[0]}.png"
+    output_image.save(final_path)
+
+    if final_path != image_path and os.path.exists(image_path):
+        os.remove(image_path)
+
+    return final_path
 
 
 def normalize_gender(gender):
