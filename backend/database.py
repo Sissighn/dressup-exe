@@ -21,7 +21,7 @@ class ClothingItem(Base):
     __tablename__ = "clothes"
     id = Column(Integer, primary_key=True, index=True)
     name = Column(String, index=True)
-    category = Column(String)  # 'TOPS', 'BOTTOMS', 'SHOES', 'BAGS'
+    category = Column(String)  # 'TOPS', 'BOTTOMS', 'DRESSES', 'SHOES', 'BAGS'
     image_path = Column(String)
     owner_key = Column(String, index=True, default="")
 

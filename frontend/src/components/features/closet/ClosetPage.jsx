@@ -7,7 +7,7 @@ import UploadModal from "./UploadModal/UploadModal";
 import StatusNotification from "./StatusNotification/StatusNotification";
 import { authFetch } from "../../../lib/authSession";
 
-const CATEGORIES = ["TOPS", "BOTTOMS", "SHOES", "BAGS"];
+const CATEGORIES = ["TOPS", "BOTTOMS", "DRESSES", "SHOES", "BAGS"];
 
 const ClosetPage = () => {
   const [items, setItems] = useState([]);

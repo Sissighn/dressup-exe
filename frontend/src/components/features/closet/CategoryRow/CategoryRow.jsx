@@ -3,7 +3,7 @@ import styles from "./CategoryRow.module.css";
 
 const CategoryRow = ({ category, items, onDeleteClick }) => {
   const categoryIndex =
-    ["TOPS", "BOTTOMS", "SHOES", "BAGS"].indexOf(category) + 1;
+    ["TOPS", "BOTTOMS", "DRESSES", "SHOES", "BAGS"].indexOf(category) + 1;
 
   return (
     <div className={styles.container}>

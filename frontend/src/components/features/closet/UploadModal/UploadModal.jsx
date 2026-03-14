@@ -41,6 +41,7 @@ const UploadModal = ({
           >
             <option value="TOPS">TOPS</option>
             <option value="BOTTOMS">BOTTOMS</option>
+            <option value="DRESSES">DRESSES</option>
             <option value="SHOES">SHOES</option>
             <option value="BAGS">BAGS</option>
           </select>
