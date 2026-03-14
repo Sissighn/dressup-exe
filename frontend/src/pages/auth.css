@@ -229,10 +229,48 @@
 }
 
 .password-rules {
-  margin: 4px 0 0;
-  padding-left: 18px;
+  margin: 6px 0 0;
+  padding: 10px;
+  list-style: none;
+  border: 1px solid var(--border-color);
+  background: #fff;
   font-size: 0.8rem;
-  opacity: 0.8;
+  opacity: 0.95;
+}
+
+.password-rule {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  margin-bottom: 6px;
+  color: #2c2c2c;
+}
+
+.password-rule:last-child {
+  margin-bottom: 0;
+}
+
+.password-rule-dot {
+  width: 10px;
+  height: 10px;
+  border-radius: 999px;
+  border: 1px solid var(--border-color);
+  background: #f1f1f1;
+  flex: 0 0 10px;
+}
+
+.password-rule.valid {
+  color: #355628;
+  font-weight: 700;
+}
+
+.password-rule.valid .password-rule-dot {
+  background: #7ea85a;
+  border-color: #355628;
+}
+
+.password-rule.invalid {
+  color: #4a4a4a;
 }
 
 .auth-error {
@@ -255,6 +293,12 @@
 .auth-primary {
   background: #000;
   color: #fff;
+}
+
+.auth-primary:disabled {
+  background: #4d4d4d;
+  color: #d8d8d8;
+  cursor: not-allowed;
 }
 
 .auth-guest {

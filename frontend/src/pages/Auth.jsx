@@ -13,18 +13,55 @@ const Auth = ({ onAuthSuccess }) => {
 
   const requirements = useMemo(
     () => [
-      "At least 12 characters",
-      "At least 1 uppercase letter",
-      "At least 1 lowercase letter",
-      "At least 1 number",
-      "At least 1 special character",
+      {
+        key: "length",
+        label: "At least 12 characters",
+        test: (value) => value.length >= 12,
+      },
+      {
+        key: "uppercase",
+        label: "At least 1 uppercase letter",
+        test: (value) => /[A-Z]/.test(value),
+      },
+      {
+        key: "lowercase",
+        label: "At least 1 lowercase letter",
+        test: (value) => /[a-z]/.test(value),
+      },
+      {
+        key: "number",
+        label: "At least 1 number",
+        test: (value) => /\d/.test(value),
+      },
+      {
+        key: "special",
+        label: "At least 1 special character",
+        test: (value) => /[^A-Za-z0-9]/.test(value),
+      },
     ],
     [],
   );
 
+  const requirementChecks = useMemo(
+    () =>
+      requirements.map((rule) => ({
+        ...rule,
+        valid: rule.test(password),
+      })),
+    [requirements, password],
+  );
+
+  const areAllRequirementsMet = requirementChecks.every((rule) => rule.valid);
+
   const submitAuth = async (e) => {
     e.preventDefault();
     setError("");
+
+    if (isRegister && !areAllRequirementsMet) {
+      setError("Please satisfy all password rules before creating an account.");
+      return;
+    }
+
     setIsLoading(true);
 
     try {
@@ -171,22 +208,35 @@ const Auth = ({ onAuthSuccess }) => {
               className="auth-input"
               type="password"
               value={password}
-              onChange={(e) => setPassword(e.target.value)}
+              onChange={(e) => {
+                setPassword(e.target.value);
+                if (error) setError("");
+              }}
               placeholder="••••••••••••"
               required
             />
 
             {isRegister && (
               <ul className="password-rules">
-                {requirements.map((rule) => (
-                  <li key={rule}>{rule}</li>
+                {requirementChecks.map((rule) => (
+                  <li
+                    key={rule.key}
+                    className={`password-rule ${rule.valid ? "valid" : "invalid"}`}
+                  >
+                    <span className="password-rule-dot" aria-hidden="true" />
+                    <span>{rule.label}</span>
+                  </li>
                 ))}
               </ul>
             )}
 
             {error && <p className="auth-error">{error}</p>}
 
-            <button className="auth-primary" type="submit" disabled={isLoading}>
+            <button
+              className="auth-primary"
+              type="submit"
+              disabled={isLoading || (isRegister && !areAllRequirementsMet)}
+            >
               {isLoading
                 ? "Please wait..."
                 : isRegister
