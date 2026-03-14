@@ -34,9 +34,11 @@ def remove_background_from_image(image_path):
     output_bytes = rembg_remove(input_buffer.getvalue())
     output_image = Image.open(BytesIO(output_bytes)).convert("RGBA")
 
-    bounding_box = output_image.getbbox()
-    if bounding_box:
-        output_image = output_image.crop(bounding_box)
+    # IMPORTANT:
+    # Do NOT crop to the non-transparent bounding box here.
+    # Cropping makes garments fill most of the reference image and can
+    # unintentionally push the try-on model to generate over-zoomed results.
+    # Keeping the original canvas preserves garment scale/proportions.
 
     final_path = f"{os.path.splitext(image_path)[0]}.png"
     output_image.save(final_path)
@@ -289,16 +291,22 @@ async def try_gemini_outfit_generation(avatar_path, top_path, bottom_path):
 
         client = genai.Client(api_key=os.getenv("GOOGLE_API_KEY"))
 
-        avatar_img = Image.open(avatar_path)
-        top_img = Image.open(top_path)
-        bottom_img = Image.open(bottom_path)
+        with Image.open(avatar_path) as avatar_source:
+            avatar_img = ImageOps.exif_transpose(avatar_source).convert("RGB")
+        with Image.open(top_path) as top_source:
+            top_img = ImageOps.exif_transpose(top_source).convert("RGBA")
+        with Image.open(bottom_path) as bottom_source:
+            bottom_img = ImageOps.exif_transpose(bottom_source).convert("RGBA")
 
         # Enforce a single-subject try-on result (no split screen / no duplicate person)
         prompt = (
             "STRICT MANDATE: Generate ONLY ONE PERSON in a single 9:16 portrait image (1080x1920). "
             "Do NOT create split-screen, side-by-side, before/after, collage, mirror duplicate, or multiple people. "
             "Use IMAGE 1 as the identity and pose reference. Replace clothing with garments inspired by IMAGE 2 (top) and IMAGE 3 (bottom). "
-            "Keep full-body framing from head to toes. "
+            "CRITICAL FRAMING: keep the same camera distance as IMAGE 1 and do NOT zoom in. "
+            "Keep full-body framing from head to toes, with both feet and top of head fully visible in frame. "
+            "Leave some empty space above the head and below the feet. "
+            "Fill the entire frame naturally (no white bars, no side borders, no letterboxing). "
             "Background must be clean and neutral. "
             "Output must be one single full-body avatar only."
         )
@@ -324,7 +332,7 @@ async def try_gemini_outfit_generation(avatar_path, top_path, bottom_path):
         if not image_saved:
             return {"success": False, "error": "AI hat kein Bild generiert."}
 
-        # Format fixieren
+        # Format fixieren bildfüllend (ohne Letterbox-Ränder)
         resize_to_target(outfit_filename, 1080, 1920)
 
         # Validate single-subject output and apply one correction pass if needed
@@ -350,7 +358,9 @@ async def try_gemini_outfit_generation(avatar_path, top_path, bottom_path):
                     "Image editing task. Keep only ONE person in frame. "
                     "Remove any second person, duplicate, mirror, split-screen, or before/after layout. "
                     "Preserve the same main subject identity from IMAGE 1 and apply the outfit style from IMAGE 2 and IMAGE 3. "
-                    "Return a single full-body 1080x1920 portrait from head to toes on a clean neutral background."
+                    "Return a single full-body 1080x1920 portrait from head to toes on a clean neutral background. "
+                    "Do not zoom in. Keep space above head and below feet. "
+                    "No white bars, no side borders, no letterboxing."
                 )
 
                 with Image.open(outfit_filename) as generated_outfit:
@@ -367,6 +377,34 @@ async def try_gemini_outfit_generation(avatar_path, top_path, bottom_path):
 
                 fixed_saved = save_generated_image(fixed_response, outfit_filename)
                 if fixed_saved:
+                    resize_to_target(outfit_filename, 1080, 1920)
+
+            # Ensure full-body framing (head + feet visible). If not, run one framing correction pass.
+            if not await is_full_body_avatar(client, outfit_filename):
+                framing_correction_prompt = (
+                    "Image editing task. Keep the same person identity and same outfit exactly. "
+                    "Change framing only: zoom out so the entire body is visible from head to both feet. "
+                    "Do not crop head, hands, legs, ankles, or feet. "
+                    "Keep a 1080x1920 portrait with empty space above head and below feet, one person only, neutral background. "
+                    "Fill frame edge-to-edge without white side borders or letterboxing."
+                )
+
+                with Image.open(outfit_filename) as generated_outfit:
+                    reframed_response = client.models.generate_content(
+                        model="gemini-2.5-flash-image",
+                        contents=[
+                            framing_correction_prompt,
+                            generated_outfit.copy(),
+                            avatar_img,
+                            top_img,
+                            bottom_img,
+                        ],
+                    )
+
+                reframed_saved = save_generated_image(
+                    reframed_response, outfit_filename
+                )
+                if reframed_saved:
                     resize_to_target(outfit_filename, 1080, 1920)
         except Exception as e:
             print(f"⚠️ Single-subject validation skipped: {e}")
