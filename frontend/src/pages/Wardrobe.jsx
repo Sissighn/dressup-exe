@@ -37,6 +37,12 @@ const Wardrobe = () => {
   });
 
   const [isGenerating, setIsGenerating] = useState(false);
+  const [archiveDialog, setArchiveDialog] = useState({
+    open: false,
+    title: "",
+    message: "",
+    isError: false,
+  });
 
   // --- SYNC: Änderungen im localStorage speichern ---
   useEffect(() => {
@@ -175,57 +181,124 @@ const Wardrobe = () => {
         headers: { "Content-Type": "application/json" },
         body: JSON.stringify({ outfit_url: dressedAvatar }),
       });
-      if (response.ok) alert("LOOK SAVED TO DIGITAL ARCHIVE!");
-      else alert("FAILED TO ARCHIVE LOOK.");
+      if (response.ok) {
+        setArchiveDialog({
+          open: true,
+          title: "ARCHIVE CONFIRMED",
+          message: "LOOK SAVED TO DIGITAL ARCHIVE.",
+          isError: false,
+        });
+      } else {
+        setArchiveDialog({
+          open: true,
+          title: "ARCHIVE FAILED",
+          message: "FAILED TO ARCHIVE LOOK.",
+          isError: true,
+        });
+      }
     } catch (error) {
       console.error("Archive error:", error);
+      setArchiveDialog({
+        open: true,
+        title: "ARCHIVE FAILED",
+        message: "CONNECTION ERROR. PLEASE TRY AGAIN.",
+        isError: true,
+      });
     }
   };
 
   const displayImage = dressedAvatar || userAvatar;
 
   return (
-    <div className="main-content">
-      <WardrobeActions
-        isGenerating={isGenerating}
-        dressedAvatar={dressedAvatar}
-        selectedTop={selectedTop}
-        selectedBottom={selectedBottom}
-        onTryOn={handleTryOn}
-        onDownload={handleDownload}
-        onArchive={handleArchive}
-        onReset={handleReset}
-        onRescan={() => navigate("/avatar")}
-      />
-
-      <AvatarDisplay
-        isGenerating={isGenerating}
-        displayImage={displayImage}
-        selectedTop={selectedTop}
-        selectedBottom={selectedBottom}
-      />
-
-      <div className="right-panel">
-        <ClothingSelector
-          label="TOPS"
-          items={tops}
-          currentItem={currentTop}
-          selectedItem={selectedTop}
-          onPrev={prevTop}
-          onNext={nextTop}
-          onSelect={setSelectedTop}
+    <>
+      <div className="main-content">
+        <WardrobeActions
+          isGenerating={isGenerating}
+          dressedAvatar={dressedAvatar}
+          selectedTop={selectedTop}
+          selectedBottom={selectedBottom}
+          onTryOn={handleTryOn}
+          onDownload={handleDownload}
+          onArchive={handleArchive}
+          onReset={handleReset}
+          onRescan={() => navigate("/avatar")}
         />
-        <ClothingSelector
-          label="BOTTOMS"
-          items={bottoms}
-          currentItem={currentBottom}
-          selectedItem={selectedBottom}
-          onPrev={prevBottom}
-          onNext={nextBottom}
-          onSelect={setSelectedBottom}
+
+        <AvatarDisplay
+          isGenerating={isGenerating}
+          displayImage={displayImage}
+          selectedTop={selectedTop}
+          selectedBottom={selectedBottom}
         />
+
+        <div className="right-panel">
+          <ClothingSelector
+            label="TOPS"
+            items={tops}
+            currentItem={currentTop}
+            selectedItem={selectedTop}
+            onPrev={prevTop}
+            onNext={nextTop}
+            onSelect={setSelectedTop}
+          />
+          <ClothingSelector
+            label="BOTTOMS"
+            items={bottoms}
+            currentItem={currentBottom}
+            selectedItem={selectedBottom}
+            onPrev={prevBottom}
+            onNext={nextBottom}
+            onSelect={setSelectedBottom}
+          />
+        </div>
       </div>
-    </div>
+
+      {archiveDialog.open && (
+        <div
+          className="wardrobe-dialog-backdrop"
+          role="presentation"
+          onClick={() =>
+            setArchiveDialog({
+              open: false,
+              title: "",
+              message: "",
+              isError: false,
+            })
+          }
+        >
+          <div
+            className="wardrobe-dialog"
+            role="dialog"
+            aria-modal="true"
+            aria-labelledby="archive-dialog-title"
+          >
+            <h3
+              id="archive-dialog-title"
+              className={`wardrobe-dialog-title ${archiveDialog.isError ? "is-error" : ""}`}
+            >
+              {archiveDialog.title}
+            </h3>
+            <p className="wardrobe-dialog-text">{archiveDialog.message}</p>
+            <div className="wardrobe-dialog-actions">
+              <button
+                type="button"
+                className="wardrobe-dialog-button"
+                onClick={() =>
+                  setArchiveDialog({
+                    open: false,
+                    title: "",
+                    message: "",
+                    isError: false,
+                  })
+                }
+              >
+                OK
+              </button>
+            </div>
+          </div>
+        </div>
+      )}
+    </>
   );
 };
 

@@ -165,3 +165,56 @@
   box-shadow: 4px 4px 0px var(--soft-black);
   transform: translate(-2px, -2px);
 }
+
+.wardrobe-dialog-backdrop {
+  position: fixed;
+  inset: 0;
+  background: rgba(0, 0, 0, 0.45);
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  padding: 16px;
+  z-index: 1200;
+}
+
+.wardrobe-dialog {
+  width: min(460px, 100%);
+  border: 2px solid var(--border-color);
+  background: #fff;
+  box-shadow: 10px 10px 0 var(--soft-black);
+  padding: 18px;
+}
+
+.wardrobe-dialog-title {
+  margin: 6px 0 10px;
+  font-size: 1.15rem;
+  letter-spacing: 0.4px;
+  font-family: var(--font-serif);
+}
+
+.wardrobe-dialog-title.is-error {
+  color: #8f1225;
+}
+
+.wardrobe-dialog-text {
+  margin: 0 0 14px;
+  font-size: 0.88rem;
+}
+
+.wardrobe-dialog-actions {
+  display: flex;
+  justify-content: flex-end;
+}
+
+.wardrobe-dialog-button {
+  min-width: 96px;
+  min-height: 38px;
+  border: 1px solid var(--border-color);
+  background: var(--accent-yellow);
+  font-weight: 800;
+  cursor: pointer;
+}
+
+.wardrobe-dialog-button:hover {
+  background: var(--accent-pink);
+}
