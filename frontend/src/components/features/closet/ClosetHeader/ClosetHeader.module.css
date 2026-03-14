@@ -5,6 +5,8 @@
   display: flex;
   gap: 2rem;
   align-items: center;
+  justify-content: space-between;
+  flex-wrap: wrap;
 }
 
 .title {
@@ -19,6 +21,7 @@
 
 .controls {
   display: flex;
+  flex-wrap: wrap;
   gap: 10px;
   align-items: center;
   background: white;
@@ -42,4 +45,29 @@
   margin-top: 0;
   padding: 5px 15px;
   font-size: 0.8rem;
+}
+
+.iconButton {
+  border: 1px solid black;
+  background: white;
+  color: black;
+  padding: 6px 12px;
+  font-size: 0.75rem;
+  font-weight: 900;
+  cursor: pointer;
+  display: inline-flex;
+  align-items: center;
+  gap: 6px;
+}
+
+.trashIcon {
+  width: 14px;
+  height: 14px;
+  flex-shrink: 0;
+}
+
+.deleteButton {
+  background: #ff4d4d;
+  color: white;
+  border-color: black;
 }
