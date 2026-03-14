@@ -1,7 +1,13 @@
 import React from "react";
 import styles from "./CategoryRow.module.css";
 
-const CategoryRow = ({ category, items, onDeleteClick }) => {
+const CategoryRow = ({
+  category,
+  items,
+  isSelectionMode,
+  selectedItemIds,
+  onToggleSelect,
+}) => {
   const categoryIndex =
     ["TOPS", "BOTTOMS", "DRESSES", "SHOES", "BAGS"].indexOf(category) + 1;
 
@@ -11,21 +17,33 @@ const CategoryRow = ({ category, items, onDeleteClick }) => {
         0{categoryIndex} / {category}
       </h3>
       <div className={styles.itemsContainer}>
-        {items.map((item) => (
-          <div key={item.id} className={styles.itemCard}>
+        {items.map((item) => {
+          const isSelected = selectedItemIds.includes(item.id);
+
+          return (
             <button
-              onClick={() => onDeleteClick(item.id)}
-              className={styles.deleteButton}
+              key={item.id}
+              type="button"
+              className={`${styles.itemCard} ${
+                isSelectionMode ? styles.selectionMode : ""
+              } ${isSelected ? styles.selected : ""}`}
+              onClick={() => onToggleSelect(item.id)}
+              aria-pressed={isSelected}
+              disabled={!isSelectionMode}
             >
-              X
+              {isSelectionMode && (
+                <span className={styles.selectionBadge}>
+                  {isSelected ? "SELECTED" : "SELECT"}
+                </span>
+              )}
+              <img
+                src={item.image_path}
+                alt={item.name}
+                className={styles.itemImage}
+              />
             </button>
-            <img
-              src={item.image_path}
-              alt={item.name}
-              className={styles.itemImage}
-            />
-          </div>
-        ))}
+          );
+        })}
       </div>
     </div>
   );

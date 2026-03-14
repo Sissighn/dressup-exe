@@ -24,24 +24,41 @@
   padding: 10px;
   background: white;
   box-shadow: 6px 6px 0px black;
-}
-
-.deleteButton {
-  position: absolute;
-  top: 6px;
-  right: 5px;
-  width: 15px;
-  height: 23px;
-  font-size: 10px;
-  background: white;
-  color: black;
-  border: 1px solid black;
-  cursor: pointer;
-  font-weight: bold;
-  z-index: 20;
   display: flex;
   align-items: center;
   justify-content: center;
+  appearance: none;
+}
+
+.selectionMode {
+  cursor: pointer;
+}
+
+.selectionMode:hover {
+  transform: translate(-2px, -2px);
+  box-shadow: 8px 8px 0px black;
+}
+
+.itemCard:disabled {
+  cursor: default;
+}
+
+.selected {
+  background: #fff6bf;
+  box-shadow: 8px 8px 0px #ff4d4d;
+}
+
+.selectionBadge {
+  position: absolute;
+  top: 8px;
+  right: 8px;
+  padding: 4px 8px;
+  font-size: 0.6rem;
+  font-weight: 900;
+  background: black;
+  color: white;
+  letter-spacing: 0.08em;
+  z-index: 1;
 }
 
 .itemImage {
