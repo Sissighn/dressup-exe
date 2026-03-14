@@ -19,7 +19,9 @@ const ClosetPage = () => {
   const [previewImage, setPreviewImage] = useState(null);
 
   const [statusMessage, setStatusMessage] = useState(null);
-  const [itemToDelete, setItemToDelete] = useState(null);
+  const [selectedItemIds, setSelectedItemIds] = useState([]);
+  const [isSelectionMode, setIsSelectionMode] = useState(false);
+  const [isDeleteModalOpen, setIsDeleteModalOpen] = useState(false);
 
   const fetchCloset = async () => {
     try {
@@ -75,21 +77,77 @@ const ClosetPage = () => {
     }
   };
 
-  const confirmDelete = async () => {
-    if (!itemToDelete) return;
-    try {
-      const response = await authFetch(`/delete-item/${itemToDelete}`, {
-        method: "DELETE",
+  const handleToggleSelectionMode = () => {
+    setIsSelectionMode((prev) => {
+      if (prev) {
+        setSelectedItemIds([]);
+      }
+      return !prev;
+    });
+  };
+
+  const handleCancelSelection = () => {
+    setIsSelectionMode(false);
+    setSelectedItemIds([]);
+    setIsDeleteModalOpen(false);
+  };
+
+  const handleToggleItemSelection = (itemId) => {
+    if (!isSelectionMode) return;
+
+    setSelectedItemIds((prev) =>
+      prev.includes(itemId)
+        ? prev.filter((id) => id !== itemId)
+        : [...prev, itemId],
+    );
+  };
+
+  const handleRequestDelete = () => {
+    if (!selectedItemIds.length) {
+      setStatusMessage({
+        type: "error",
+        text: "SELECT AT LEAST ONE ITEM.",
       });
-      if (response.ok) {
-        fetchCloset();
-        setItemToDelete(null);
-      } else {
+      return;
+    }
+
+    setIsDeleteModalOpen(true);
+  };
+
+  const confirmDelete = async () => {
+    if (!selectedItemIds.length) return;
+
+    try {
+      const deleteResults = await Promise.allSettled(
+        selectedItemIds.map((itemId) =>
+          authFetch(`/delete-item/${itemId}`, {
+            method: "DELETE",
+          }),
+        ),
+      );
+
+      const failedDeletes = deleteResults.filter(
+        (result) => result.status === "rejected" || !result.value?.ok,
+      );
+
+      await fetchCloset();
+      setIsDeleteModalOpen(false);
+
+      if (failedDeletes.length) {
         setStatusMessage({
           type: "error",
-          text: "SERVER ERROR: ACTION DENIED.",
+          text: "SOME ITEMS COULD NOT BE DELETED.",
         });
+        setSelectedItemIds([]);
+        return;
       }
+
+      setStatusMessage({
+        type: "success",
+        text: "SELECTED ITEMS DELETED.",
+      });
+      setSelectedItemIds([]);
+      setIsSelectionMode(false);
     } catch (error) {
       setStatusMessage({ type: "error", text: "CONNECTION INTERRUPTED." });
     }
@@ -110,10 +168,11 @@ const ClosetPage = () => {
         onDismiss={() => setStatusMessage(null)}
       />
 
-      {itemToDelete && (
+      {isDeleteModalOpen && (
         <DeleteItemModal
           onConfirm={confirmDelete}
-          onCancel={() => setItemToDelete(null)}
+          onCancel={() => setIsDeleteModalOpen(false)}
+          itemCount={selectedItemIds.length}
         />
       )}
 
@@ -123,6 +182,11 @@ const ClosetPage = () => {
         filterCategory={filterCategory}
         onFilterCategoryChange={(e) => setFilterCategory(e.target.value)}
         onAddNewClick={() => fileInputRef.current.click()}
+        isSelectionMode={isSelectionMode}
+        selectedCount={selectedItemIds.length}
+        onToggleSelectionMode={handleToggleSelectionMode}
+        onDeleteSelected={handleRequestDelete}
+        onCancelSelection={handleCancelSelection}
       />
 
       <input
@@ -139,7 +203,9 @@ const ClosetPage = () => {
             key={cat}
             category={cat}
             items={getCategoryItems(cat)}
-            onDeleteClick={setItemToDelete}
+            isSelectionMode={isSelectionMode}
+            selectedItemIds={selectedItemIds}
+            onToggleSelect={handleToggleItemSelection}
           />
         ))}
       </div>
