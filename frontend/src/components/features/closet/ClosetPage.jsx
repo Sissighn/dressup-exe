@@ -17,6 +17,8 @@ const ClosetPage = () => {
   const [isModalOpen, setIsModalOpen] = useState(false);
   const [selectedFile, setSelectedFile] = useState(null);
   const [previewImage, setPreviewImage] = useState(null);
+  const [pendingUploadFiles, setPendingUploadFiles] = useState([]);
+  const [currentUploadIndex, setCurrentUploadIndex] = useState(0);
 
   const [statusMessage, setStatusMessage] = useState(null);
   const [selectedItemIds, setSelectedItemIds] = useState([]);
@@ -37,12 +39,39 @@ const ClosetPage = () => {
     fetchCloset();
   }, []);
 
-  const handleFileSelect = (e) => {
-    const file = e.target.files[0];
+  useEffect(
+    () => () => {
+      if (previewImage) {
+        URL.revokeObjectURL(previewImage);
+      }
+    },
+    [previewImage],
+  );
+
+  const openUploadStep = (files, stepIndex) => {
+    const file = files[stepIndex];
     if (!file) return;
+
+    setCurrentUploadIndex(stepIndex);
     setSelectedFile(file);
     setPreviewImage(URL.createObjectURL(file));
     setIsModalOpen(true);
+  };
+
+  const resetUploadFlow = () => {
+    setIsModalOpen(false);
+    setSelectedFile(null);
+    setPreviewImage(null);
+    setPendingUploadFiles([]);
+    setCurrentUploadIndex(0);
+  };
+
+  const handleFileSelect = (e) => {
+    const files = Array.from(e.target.files || []);
+    if (!files.length) return;
+
+    setPendingUploadFiles(files);
+    openUploadStep(files, 0);
     e.target.value = null;
   };
 
@@ -64,10 +93,19 @@ const ClosetPage = () => {
 
       if (!response.ok) throw new Error("UPLOAD_FAILED");
 
-      fetchCloset();
-      setIsModalOpen(false);
-      setSelectedFile(null);
-      setPreviewImage(null);
+      const isLastStep = currentUploadIndex >= pendingUploadFiles.length - 1;
+
+      if (isLastStep) {
+        await fetchCloset();
+        setStatusMessage({
+          type: "success",
+          text: `${pendingUploadFiles.length} ITEM(S) UPLOADED.`,
+        });
+        resetUploadFlow();
+        return;
+      }
+
+      openUploadStep(pendingUploadFiles, currentUploadIndex + 1);
     } catch (error) {
       console.error("UPLOAD_ERROR:", error);
       setStatusMessage({
@@ -195,6 +233,7 @@ const ClosetPage = () => {
         style={{ display: "none" }}
         onChange={handleFileSelect}
         accept="image/*"
+        multiple
       />
 
       <div style={{ padding: "2rem" }}>
@@ -212,10 +251,13 @@ const ClosetPage = () => {
 
       <UploadModal
         isOpen={isModalOpen}
-        onClose={() => setIsModalOpen(false)}
+        onClose={resetUploadFlow}
         onConfirm={handleConfirmUpload}
         previewImage={previewImage}
         initialCategory={uploadCategory}
+        currentFileName={selectedFile?.name || ""}
+        currentStep={currentUploadIndex + 1}
+        totalSteps={pendingUploadFiles.length || 1}
       />
     </div>
   );

@@ -7,6 +7,9 @@ const UploadModal = ({
   onConfirm,
   previewImage,
   initialCategory,
+  currentFileName,
+  currentStep,
+  totalSteps,
 }) => {
   const [modalUploadCategory, setModalUploadCategory] =
     useState(initialCategory);
@@ -27,6 +30,13 @@ const UploadModal = ({
     <div className={styles.overlay} onClick={onClose}>
       <div className={styles.modal} onClick={(e) => e.stopPropagation()}>
         <h3 className={styles.title}>CONFIRM ASSET</h3>
+
+        <p className={styles.progress}>
+          ITEM {currentStep} / {totalSteps}
+        </p>
+        {currentFileName && (
+          <p className={styles.fileName}>{currentFileName}</p>
+        )}
 
         {previewImage && (
           <img src={previewImage} alt="Preview" className={styles.preview} />
