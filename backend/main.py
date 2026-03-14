@@ -479,17 +479,25 @@ async def upload_item(
     actor=Depends(_get_current_actor),
 ):
     # 1. Bild sicher benennen und lokal speichern
-    safe_filename = (
-        f"{actor['owner_key']}_{category}_{int(time.time())}_{file.filename}"
-    ).replace(" ", "_")
+    original_name, original_ext = os.path.splitext(file.filename or "item.png")
+    safe_original_name = (original_name or "item").replace(" ", "_")
+    safe_filename = f"{actor['owner_key']}_{category}_{int(time.time())}_{safe_original_name}{original_ext or '.png'}"
     local_path = os.path.join(UPLOAD_DIR, safe_filename)
 
     with open(local_path, "wb") as f:
         shutil.copyfileobj(file.file, f)
 
+    try:
+        processed_path = services.remove_background_from_image(local_path)
+    except Exception as exc:
+        print(f"⚠️ Background removal skipped for {safe_filename}: {exc}")
+        processed_path = local_path
+
+    final_filename = os.path.basename(processed_path)
+
     # 2. SAUBERE URL GENERIEREN (Wichtig für das Frontend!)
     # Wir speichern NICHT den lokalen Pfad, sondern die Web-URL
-    image_url = f"http://localhost:8000/uploads/{safe_filename}"
+    image_url = f"http://localhost:8000/uploads/{final_filename}"
 
     # 3. In Datenbank speichern
     new_item = ClothingItem(
