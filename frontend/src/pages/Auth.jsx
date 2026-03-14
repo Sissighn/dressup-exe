@@ -80,75 +80,130 @@ const Auth = ({ onAuthSuccess }) => {
 
   return (
     <div className="auth-page">
-      <div className="auth-card">
-        <h1 className="auth-title">dressup.exe</h1>
-        <p className="auth-subtitle">Secure access for your digital wardrobe</p>
+      <div className="auth-shell">
+        <section className="auth-preview">
+          <p className="auth-kicker">WELCOME</p>
+          <h1 className="auth-preview-title">dressup.exe</h1>
+          <p className="auth-preview-subtitle">
+            Build your digital model, style complete outfits, and save your
+            looks in a personal AI lookbook.
+          </p>
 
-        <div className="auth-tabs">
-          <button
-            className={`auth-tab ${mode === "login" ? "active" : ""}`}
-            onClick={() => setMode("login")}
-            type="button"
-          >
-            Sign In
-          </button>
-          <button
-            className={`auth-tab ${mode === "register" ? "active" : ""}`}
-            onClick={() => setMode("register")}
-            type="button"
-          >
-            Register
-          </button>
-        </div>
+          <div className="auth-preview-demo" aria-hidden="true">
+            <div className="auth-demo-topbar">
+              <span>PRODUCT PREVIEW</span>
+              <span>What you unlock after login</span>
+            </div>
+            <div className="auth-demo-grid">
+              <div className="auth-demo-step">
+                <small>STEP 01</small>
+                <strong>Create your model</strong>
+                <span>Face scan + biometrics</span>
+              </div>
+              <div className="auth-demo-step">
+                <small>STEP 02</small>
+                <strong>Build your closet</strong>
+                <span>Upload tops & bottoms</span>
+              </div>
+              <div className="auth-demo-step">
+                <small>STEP 03</small>
+                <strong>Generate outfits</strong>
+                <span>AI-styled full-body looks</span>
+              </div>
+              <div className="auth-demo-step">
+                <small>STEP 04</small>
+                <strong>Archive in lookbook</strong>
+                <span>Save and compare results</span>
+              </div>
+            </div>
 
-        <form onSubmit={submitAuth} className="auth-form">
-          <label className="auth-label">Email</label>
-          <input
-            className="auth-input"
-            type="email"
-            value={email}
-            onChange={(e) => setEmail(e.target.value)}
-            placeholder="name@example.com"
-            required
-          />
+            <div className="auth-demo-lookbook-strip">
+              <div className="auth-demo-look" />
+              <div className="auth-demo-look" />
+              <div className="auth-demo-look" />
+            </div>
+          </div>
 
-          <label className="auth-label">Password</label>
-          <input
-            className="auth-input"
-            type="password"
-            value={password}
-            onChange={(e) => setPassword(e.target.value)}
-            placeholder="••••••••••••"
-            required
-          />
-
-          {isRegister && (
-            <ul className="password-rules">
-              {requirements.map((rule) => (
-                <li key={rule}>{rule}</li>
-              ))}
+          <div className="auth-preview-block">
+            <h3>How it works</h3>
+            <ul>
+              <li>Upload a face scan and create your digital twin</li>
+              <li>Select tops and bottoms from your closet</li>
+              <li>Generate and archive your styled outfit results</li>
             </ul>
-          )}
+          </div>
+        </section>
 
-          {error && <p className="auth-error">{error}</p>}
+        <section className="auth-card">
+          <h2 className="auth-title">Get Started</h2>
+          <p className="auth-subtitle">Choose your preferred access method</p>
 
-          <button className="auth-primary" type="submit" disabled={isLoading}>
-            {isLoading
-              ? "Please wait..."
-              : isRegister
-                ? "Create Account"
-                : "Sign In"}
+          <div className="auth-tabs">
+            <button
+              className={`auth-tab ${mode === "login" ? "active" : ""}`}
+              onClick={() => setMode("login")}
+              type="button"
+            >
+              Sign In
+            </button>
+            <button
+              className={`auth-tab ${mode === "register" ? "active" : ""}`}
+              onClick={() => setMode("register")}
+              type="button"
+            >
+              Register
+            </button>
+          </div>
+
+          <form onSubmit={submitAuth} className="auth-form">
+            <label className="auth-label">Email</label>
+            <input
+              className="auth-input"
+              type="email"
+              value={email}
+              onChange={(e) => setEmail(e.target.value)}
+              placeholder="name@example.com"
+              required
+            />
+
+            <label className="auth-label">Password</label>
+            <input
+              className="auth-input"
+              type="password"
+              value={password}
+              onChange={(e) => setPassword(e.target.value)}
+              placeholder="••••••••••••"
+              required
+            />
+
+            {isRegister && (
+              <ul className="password-rules">
+                {requirements.map((rule) => (
+                  <li key={rule}>{rule}</li>
+                ))}
+              </ul>
+            )}
+
+            {error && <p className="auth-error">{error}</p>}
+
+            <button className="auth-primary" type="submit" disabled={isLoading}>
+              {isLoading
+                ? "Please wait..."
+                : isRegister
+                  ? "Create Account"
+                  : "Sign In"}
+            </button>
+          </form>
+
+          <button
+            className="auth-guest"
+            onClick={continueAsGuest}
+            type="button"
+            disabled={isLoading}
+          >
+            Continue as Guest
           </button>
-        </form>
-
-        <button
-          className="auth-guest"
-          onClick={continueAsGuest}
-          type="button"
-          disabled={isLoading}
-        >
-          Continue as Guest
-        </button>
+        </section>
       </div>
     </div>
   );
