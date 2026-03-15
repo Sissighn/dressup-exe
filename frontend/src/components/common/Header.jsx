@@ -40,6 +40,9 @@ const Header = ({ onLogout, authUser, profileImage }) => {
         <NavLink to="/closet" className={getNavLinkClass}>
           CLOSET
         </NavLink>
+        <NavLink to="/styling" className={getNavLinkClass}>
+          STYLING LAB
+        </NavLink>
         <NavLink to="/gallery" className={getNavLinkClass}>
           LOOKBOOK
         </NavLink>
