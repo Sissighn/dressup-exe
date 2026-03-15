@@ -5,8 +5,11 @@ import base64
 
 try:
     from rembg import remove as rembg_remove
-except ImportError:
+
+    rembg_import_error = None
+except ImportError as exc:
     rembg_remove = None
+    rembg_import_error = str(exc)
 
 # WICHTIG: Absoluter Pfad verwenden!
 BASE_DIR = os.path.dirname(os.path.abspath(__file__))
@@ -24,7 +27,9 @@ def remove_background_from_image(image_path):
     Returns the final processed file path.
     """
     if rembg_remove is None:
-        raise RuntimeError("Background removal dependency is not installed.")
+        raise RuntimeError(
+            f"Background removal dependency is not installed. {rembg_import_error}"
+        )
 
     with Image.open(image_path) as source_image:
         normalized = ImageOps.exif_transpose(source_image).convert("RGBA")

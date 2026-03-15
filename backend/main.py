@@ -505,11 +505,23 @@ async def upload_item(
     with open(local_path, "wb") as f:
         shutil.copyfileobj(file.file, f)
 
-    try:
-        processed_path = services.remove_background_from_image(local_path)
-    except Exception as exc:
-        print(f"⚠️ Background removal skipped for {safe_filename}: {exc}")
-        processed_path = local_path
+    processed_path = local_path
+    removal_error = None
+
+    for _ in range(2):
+        try:
+            processed_path = services.remove_background_from_image(local_path)
+            removal_error = None
+            break
+        except Exception as exc:
+            removal_error = exc
+
+    if removal_error is not None:
+        print(f"❌ Background removal failed for {safe_filename}: {removal_error}")
+        raise HTTPException(
+            status_code=500,
+            detail="Background removal failed. Please retry upload.",
+        )
 
     final_filename = os.path.basename(processed_path)
 
