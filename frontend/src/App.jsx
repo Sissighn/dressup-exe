@@ -6,6 +6,7 @@ import Wardrobe from "./pages/Wardrobe";
 import Avatar from "./pages/Avatar";
 import Closet from "./pages/Closet";
 import Gallery from "./pages/Gallery";
+import StylingBoard from "./pages/StylingBoard";
 import About from "./pages/About";
 import Auth from "./pages/Auth";
 import {
@@ -156,6 +157,7 @@ function App() {
           <Route path="/" element={<Wardrobe />} />
           <Route path="/avatar" element={<Avatar />} />
           <Route path="/closet" element={<Closet />} />
+          <Route path="/styling" element={<StylingBoard />} />
           <Route path="/gallery" element={<Gallery />} />
           <Route path="/about" element={<About />} />
         </Routes>
