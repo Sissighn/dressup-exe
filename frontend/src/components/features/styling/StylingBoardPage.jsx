@@ -406,46 +406,37 @@ const StylingBoardPage = () => {
         </div>
 
         <div className="styling-controls">
-          <h3>ITEM CONTROLS</h3>
           {selectedPlacedItem ? (
-            <>
-              <p>
-                <strong>{selectedPlacedItem.name || "UNTITLED ITEM"}</strong>
-                <br />
-                <span>{selectedPlacedItem.category}</span>
-              </p>
-
-              <div className="styling-controls-grid">
-                <button type="button" onClick={() => rotateSelected(-10)}>
-                  ROTATE -
-                </button>
-                <button type="button" onClick={() => rotateSelected(10)}>
-                  ROTATE +
-                </button>
-                <button type="button" onClick={() => scaleSelected(0.9)}>
-                  SCALE -
-                </button>
-                <button type="button" onClick={() => scaleSelected(1.1)}>
-                  SCALE +
-                </button>
-                <button type="button" onClick={duplicateSelected}>
-                  DUPLICATE
-                </button>
-                <button
-                  type="button"
-                  onClick={() => bringToFront(selectedPlacedItem.instanceId)}
-                >
-                  BRING FRONT
-                </button>
-                <button
-                  type="button"
-                  onClick={removeSelected}
-                  className="is-danger"
-                >
-                  DELETE ITEM
-                </button>
-              </div>
-            </>
+            <div className="styling-controls-grid">
+              <button type="button" onClick={() => rotateSelected(-10)}>
+                ROTATE -
+              </button>
+              <button type="button" onClick={() => rotateSelected(10)}>
+                ROTATE +
+              </button>
+              <button type="button" onClick={() => scaleSelected(0.9)}>
+                SCALE -
+              </button>
+              <button type="button" onClick={() => scaleSelected(1.1)}>
+                SCALE +
+              </button>
+              <button type="button" onClick={duplicateSelected}>
+                DUPLICATE
+              </button>
+              <button
+                type="button"
+                onClick={() => bringToFront(selectedPlacedItem.instanceId)}
+              >
+                BRING FRONT
+              </button>
+              <button
+                type="button"
+                onClick={removeSelected}
+                className="is-danger"
+              >
+                DELETE ITEM
+              </button>
+            </div>
           ) : (
             <p>Select one placed item to edit it.</p>
           )}
