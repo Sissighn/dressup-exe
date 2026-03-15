@@ -141,6 +141,12 @@
   letter-spacing: 0.5px;
 }
 
+.styling-board-toolbar-actions {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+}
+
 .styling-board-toolbar button,
 .styling-controls button {
   border: 1px solid var(--border-color);
@@ -159,7 +165,7 @@
 
 .styling-board {
   position: relative;
-  margin: 18px;
+  margin: 18px auto;
   border: 1px solid var(--border-color);
   background:
     linear-gradient(to right, rgba(0, 0, 0, 0.03) 1px, transparent 1px),
@@ -167,7 +173,10 @@
     #fff;
   background-size: 28px 28px;
   overflow: hidden;
-  min-height: 360px;
+  aspect-ratio: 1 / 1;
+  width: min(calc(100% - 36px), calc(100vh - 260px));
+  height: auto;
+  max-width: 920px;
 }
 
 .styling-board-watermark {
@@ -252,5 +261,10 @@
 
   .styling-controls-grid {
     grid-template-columns: repeat(2, minmax(0, 1fr));
+  }
+
+  .styling-board {
+    width: min(calc(100% - 24px), calc(100vh - 420px));
+    margin: 12px auto;
   }
 }
