@@ -17,6 +17,7 @@ const clamp = (value, min, max) => Math.min(Math.max(value, min), max);
 const StylingBoardPage = () => {
   const [closetItems, setClosetItems] = useState([]);
   const [isLoading, setIsLoading] = useState(true);
+  const [isSaving, setIsSaving] = useState(false);
   const [activeCategory, setActiveCategory] = useState("ALL");
   const [placedItems, setPlacedItems] = useState([]);
   const [selectedInstanceId, setSelectedInstanceId] = useState(null);
@@ -101,6 +102,7 @@ const StylingBoardPage = () => {
       x: Math.max(20, baseX + (Math.random() * 40 - 20)),
       y: Math.max(20, baseY + (Math.random() * 40 - 20)),
       width: size,
+      aspectRatio: 1,
       rotation: 0,
       zIndex: nextZ,
     };
@@ -130,6 +132,8 @@ const StylingBoardPage = () => {
       instanceId: item.instanceId,
       offsetX: event.clientX - boardRect.left - item.x,
       offsetY: event.clientY - boardRect.top - item.y,
+      width: item.width,
+      height: item.width * (item.aspectRatio || 1),
     };
 
     const handlePointerMove = (moveEvent) => {
@@ -139,22 +143,21 @@ const StylingBoardPage = () => {
       const currentBoardRect = boardRef.current?.getBoundingClientRect();
       if (!currentBoardRect) return;
 
-      const movedItem = placedItems.find(
-        (entry) => entry.instanceId === activeDrag.instanceId,
-      );
-
-      const itemWidth = movedItem?.width || item.width;
-      const maxX = Math.max(0, currentBoardRect.width - itemWidth);
-      const maxY = Math.max(0, currentBoardRect.height - itemWidth);
+      const itemWidth = activeDrag.width || item.width;
+      const itemHeight = activeDrag.height || itemWidth;
+      const minX = -itemWidth * 0.8;
+      const maxX = currentBoardRect.width - itemWidth * 0.2;
+      const minY = -itemHeight * 0.8;
+      const maxY = currentBoardRect.height - itemHeight * 0.2;
 
       const nextX = clamp(
         moveEvent.clientX - currentBoardRect.left - activeDrag.offsetX,
-        0,
+        minX,
         maxX,
       );
       const nextY = clamp(
         moveEvent.clientY - currentBoardRect.top - activeDrag.offsetY,
-        0,
+        minY,
         maxY,
       );
 
@@ -213,6 +216,70 @@ const StylingBoardPage = () => {
   const clearBoard = () => {
     setPlacedItems([]);
     setSelectedInstanceId(null);
+  };
+
+  const saveBoardAsPng = async () => {
+    if (!boardRef.current || !placedItems.length || isSaving) return;
+
+    setIsSaving(true);
+
+    try {
+      const boardRect = boardRef.current.getBoundingClientRect();
+      const payload = {
+        board_width: Math.max(1, Math.round(boardRect.width)),
+        board_height: Math.max(1, Math.round(boardRect.height)),
+        export_scale: 4,
+        items: placedItems.map((item) => ({
+          image_path: item.imagePath,
+          x: item.x,
+          y: item.y,
+          width: item.width,
+          aspect_ratio: item.aspectRatio || 1,
+          rotation: item.rotation || 0,
+          z_index: item.zIndex || 0,
+        })),
+      };
+
+      const exportResponse = await authFetch("/export-styling-board", {
+        method: "POST",
+        headers: {
+          "Content-Type": "application/json",
+        },
+        body: JSON.stringify(payload),
+      });
+
+      if (!exportResponse.ok) {
+        const errorPayload = await exportResponse.json().catch(() => ({}));
+        throw new Error(errorPayload.detail || "EXPORT_REQUEST_FAILED");
+      }
+
+      const exportData = await exportResponse.json();
+      if (!exportData?.image_url) {
+        throw new Error("EXPORT_IMAGE_URL_MISSING");
+      }
+
+      const imageResponse = await fetch(exportData.image_url, {
+        cache: "no-cache",
+      });
+      if (!imageResponse.ok) {
+        throw new Error("EXPORT_IMAGE_DOWNLOAD_FAILED");
+      }
+
+      const blob = await imageResponse.blob();
+      const url = window.URL.createObjectURL(blob);
+      const link = document.createElement("a");
+      link.href = url;
+      link.download = `styling-board-${Date.now()}.png`;
+      document.body.appendChild(link);
+      link.click();
+      document.body.removeChild(link);
+      window.URL.revokeObjectURL(url);
+    } catch (error) {
+      console.error("BOARD_EXPORT_FAILED", error);
+      alert("SAVE FAILED. PLEASE TRY AGAIN.");
+    } finally {
+      setIsSaving(false);
+    }
   };
 
   return (
@@ -275,6 +342,13 @@ const StylingBoardPage = () => {
           <div className="styling-board-toolbar-actions">
             <button
               type="button"
+              onClick={saveBoardAsPng}
+              disabled={!placedItems.length || isSaving}
+            >
+              {isSaving ? "SAVING..." : "SAVE BOARD"}
+            </button>
+            <button
+              type="button"
               onClick={clearBoard}
               disabled={!placedItems.length}
             >
@@ -306,7 +380,21 @@ const StylingBoardPage = () => {
               }}
               onPointerDown={(event) => handlePointerDown(event, item)}
             >
-              <img src={item.imagePath} alt={item.name} draggable={false} />
+              <img
+                src={item.imagePath}
+                alt={item.name}
+                draggable={false}
+                onLoad={(event) => {
+                  const { naturalWidth, naturalHeight } = event.currentTarget;
+                  if (!naturalWidth || !naturalHeight) return;
+                  const nextRatio = naturalHeight / naturalWidth;
+                  if (Math.abs((item.aspectRatio || 1) - nextRatio) < 0.001) {
+                    return;
+                  }
+
+                  updatePlacedItem(item.instanceId, { aspectRatio: nextRatio });
+                }}
+              />
             </button>
           ))}
 
