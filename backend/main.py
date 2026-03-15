@@ -24,6 +24,7 @@ from dotenv import load_dotenv
 from PIL import Image
 from io import BytesIO
 from pydantic import BaseModel
+from PIL import ImageDraw
 
 # Lokale Importe
 from database import Base, engine, get_db, ClothingItem, User
@@ -104,6 +105,23 @@ class ProfileUpdateRequest(BaseModel):
     body_type: Optional[str] = None
     avatar_url: Optional[str] = None
     face_scan_url: Optional[str] = None
+
+
+class StylingPlacedItem(BaseModel):
+    image_path: str
+    x: float
+    y: float
+    width: float
+    aspect_ratio: Optional[float] = 1.0
+    rotation: Optional[float] = 0.0
+    z_index: Optional[int] = 0
+
+
+class StylingBoardExportRequest(BaseModel):
+    board_width: int
+    board_height: int
+    export_scale: Optional[int] = 3
+    items: list[StylingPlacedItem]
 
 
 def _b64url_encode(data: bytes) -> str:
@@ -520,6 +538,81 @@ async def get_closet(db: Session = Depends(get_db), actor=Depends(_get_current_a
         .filter(ClothingItem.owner_key == actor["owner_key"])
         .all()
     )
+
+
+@app.post("/export-styling-board")
+async def export_styling_board(
+    payload: StylingBoardExportRequest, actor=Depends(_get_current_actor)
+):
+    if payload.board_width <= 0 or payload.board_height <= 0:
+        raise HTTPException(status_code=400, detail="Invalid board size.")
+
+    if not payload.items:
+        raise HTTPException(status_code=400, detail="No board items provided.")
+
+    try:
+        scale = max(1, min(int(payload.export_scale or 3), 6))
+        out_w = int(payload.board_width * scale)
+        out_h = int(payload.board_height * scale)
+
+        canvas = Image.new("RGBA", (out_w, out_h), (255, 255, 255, 255))
+        draw = ImageDraw.Draw(canvas)
+
+        grid = 28 * scale
+        grid_color = (0, 0, 0, 8)
+
+        for x in range(0, out_w + 1, grid):
+            draw.line([(x, 0), (x, out_h)], fill=grid_color, width=max(1, scale // 2))
+        for y in range(0, out_h + 1, grid):
+            draw.line([(0, y), (out_w, y)], fill=grid_color, width=max(1, scale // 2))
+
+        ordered_items = sorted(payload.items, key=lambda item: item.z_index or 0)
+
+        for item in ordered_items:
+            raw_path = (item.image_path or "").split("?")[0]
+            filename = os.path.basename(raw_path)
+            if not filename:
+                continue
+
+            file_path = os.path.join(UPLOAD_DIR, filename)
+            if not os.path.exists(file_path):
+                continue
+
+            # Sicherheitsgrenze: nur eigene Uploads erlauben
+            if not filename.startswith(f"{actor['owner_key']}_"):
+                continue
+
+            with Image.open(file_path) as src:
+                source = src.convert("RGBA")
+
+            draw_w = max(1, int(round(item.width * scale)))
+            ratio = item.aspect_ratio or 1.0
+            draw_h = max(1, int(round(draw_w * ratio)))
+
+            source = source.resize((draw_w, draw_h), Image.Resampling.LANCZOS)
+            rotated = source.rotate(
+                float(item.rotation or 0.0),
+                resample=Image.Resampling.BICUBIC,
+                expand=True,
+            )
+
+            center_x = (item.x * scale) + draw_w / 2
+            center_y = (item.y * scale) + draw_h / 2
+            paste_x = int(round(center_x - rotated.width / 2))
+            paste_y = int(round(center_y - rotated.height / 2))
+
+            canvas.paste(rotated, (paste_x, paste_y), rotated)
+
+        filename = f"styling_board_{actor['owner_key']}_{int(time.time())}.png"
+        output_path = os.path.join(UPLOAD_DIR, filename)
+        canvas.convert("RGB").save(output_path, format="PNG", optimize=False)
+
+        return {
+            "status": "success",
+            "image_url": f"http://localhost:8000/uploads/{filename}",
+        }
+    except Exception as exc:
+        raise HTTPException(status_code=500, detail=f"Board export failed: {exc}")
 
 
 @app.delete("/delete-item/{item_id}")
