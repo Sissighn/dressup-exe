@@ -559,12 +559,13 @@ async def export_styling_board(
         draw = ImageDraw.Draw(canvas)
 
         grid = 28 * scale
-        grid_color = (0, 0, 0, 8)
+        # Match the very soft UI grid from Styling Lab (subtle and light)
+        grid_color = (0, 0, 0, 2)
 
         for x in range(0, out_w + 1, grid):
-            draw.line([(x, 0), (x, out_h)], fill=grid_color, width=max(1, scale // 2))
+            draw.line([(x, 0), (x, out_h)], fill=grid_color, width=1)
         for y in range(0, out_h + 1, grid):
-            draw.line([(0, y), (out_w, y)], fill=grid_color, width=max(1, scale // 2))
+            draw.line([(0, y), (out_w, y)], fill=grid_color, width=1)
 
         ordered_items = sorted(payload.items, key=lambda item: item.z_index or 0)
 
