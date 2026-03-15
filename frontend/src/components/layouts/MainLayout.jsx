@@ -5,6 +5,7 @@ import Header from "../common/Header";
 const PAGE_NAMES = {
   "/": "WARDROBE",
   "/closet": "CLOSET",
+  "/styling": "STYLING LAB",
   "/gallery": "LOOKBOOK",
   "/avatar": "MY MODEL",
   "/about": "ABOUT",
