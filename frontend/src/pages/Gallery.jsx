@@ -55,6 +55,8 @@ const Gallery = () => {
         loading={loading}
         looks={looks}
         onDelete={handleDeleteRequest}
+        emptyTitle="NO LOOKS ARCHIVED YET"
+        itemLabel="Look"
       />
       {pendingDeleteId && (
         <DeleteItemModal
