@@ -18,9 +18,16 @@ const StylingBoardPage = () => {
   const [closetItems, setClosetItems] = useState([]);
   const [isLoading, setIsLoading] = useState(true);
   const [isSaving, setIsSaving] = useState(false);
+  const [isArchiving, setIsArchiving] = useState(false);
   const [activeCategory, setActiveCategory] = useState("ALL");
   const [placedItems, setPlacedItems] = useState([]);
   const [selectedInstanceId, setSelectedInstanceId] = useState(null);
+  const [archiveDialog, setArchiveDialog] = useState({
+    open: false,
+    title: "",
+    message: "",
+    isError: false,
+  });
 
   const boardRef = useRef(null);
   const dragRef = useRef(null);
@@ -218,45 +225,71 @@ const StylingBoardPage = () => {
     setSelectedInstanceId(null);
   };
 
+  const buildBoardExportPayload = () => {
+    const boardRect = boardRef.current?.getBoundingClientRect();
+    if (!boardRect || !placedItems.length) {
+      return null;
+    }
+
+    return {
+      board_width: Math.max(1, Math.round(boardRect.width)),
+      board_height: Math.max(1, Math.round(boardRect.height)),
+      export_scale: 4,
+      items: placedItems.map((item) => ({
+        image_path: item.imagePath,
+        x: item.x,
+        y: item.y,
+        width: item.width,
+        aspect_ratio: item.aspectRatio || 1,
+        rotation: item.rotation || 0,
+        z_index: item.zIndex || 0,
+      })),
+    };
+  };
+
+  const exportBoard = async () => {
+    const payload = buildBoardExportPayload();
+    if (!payload) {
+      throw new Error("BOARD_EXPORT_PAYLOAD_MISSING");
+    }
+
+    const exportResponse = await authFetch("/export-styling-board", {
+      method: "POST",
+      headers: {
+        "Content-Type": "application/json",
+      },
+      body: JSON.stringify(payload),
+    });
+
+    if (!exportResponse.ok) {
+      const errorPayload = await exportResponse.json().catch(() => ({}));
+      throw new Error(errorPayload.detail || "EXPORT_REQUEST_FAILED");
+    }
+
+    const exportData = await exportResponse.json();
+    if (!exportData?.image_url) {
+      throw new Error("EXPORT_IMAGE_URL_MISSING");
+    }
+
+    return exportData;
+  };
+
+  const closeArchiveDialog = () => {
+    setArchiveDialog({
+      open: false,
+      title: "",
+      message: "",
+      isError: false,
+    });
+  };
+
   const saveBoardAsPng = async () => {
     if (!boardRef.current || !placedItems.length || isSaving) return;
 
     setIsSaving(true);
 
     try {
-      const boardRect = boardRef.current.getBoundingClientRect();
-      const payload = {
-        board_width: Math.max(1, Math.round(boardRect.width)),
-        board_height: Math.max(1, Math.round(boardRect.height)),
-        export_scale: 4,
-        items: placedItems.map((item) => ({
-          image_path: item.imagePath,
-          x: item.x,
-          y: item.y,
-          width: item.width,
-          aspect_ratio: item.aspectRatio || 1,
-          rotation: item.rotation || 0,
-          z_index: item.zIndex || 0,
-        })),
-      };
-
-      const exportResponse = await authFetch("/export-styling-board", {
-        method: "POST",
-        headers: {
-          "Content-Type": "application/json",
-        },
-        body: JSON.stringify(payload),
-      });
-
-      if (!exportResponse.ok) {
-        const errorPayload = await exportResponse.json().catch(() => ({}));
-        throw new Error(errorPayload.detail || "EXPORT_REQUEST_FAILED");
-      }
-
-      const exportData = await exportResponse.json();
-      if (!exportData?.image_url) {
-        throw new Error("EXPORT_IMAGE_URL_MISSING");
-      }
+      const exportData = await exportBoard();
 
       const imageResponse = await fetch(exportData.image_url, {
         cache: "no-cache",
@@ -279,6 +312,46 @@ const StylingBoardPage = () => {
       alert("SAVE FAILED. PLEASE TRY AGAIN.");
     } finally {
       setIsSaving(false);
+    }
+  };
+
+  const archiveBoard = async () => {
+    if (!boardRef.current || !placedItems.length || isArchiving) return;
+
+    setIsArchiving(true);
+
+    try {
+      const exportData = await exportBoard();
+
+      const archiveResponse = await authFetch("/archive-board", {
+        method: "POST",
+        headers: {
+          "Content-Type": "application/json",
+        },
+        body: JSON.stringify({ image_url: exportData.image_url }),
+      });
+
+      if (!archiveResponse.ok) {
+        const errorPayload = await archiveResponse.json().catch(() => ({}));
+        throw new Error(errorPayload.detail || "ARCHIVE_REQUEST_FAILED");
+      }
+
+      setArchiveDialog({
+        open: true,
+        title: "ARCHIVE CONFIRMED",
+        message: "BOARD SAVED TO STYLE BOARDS.",
+        isError: false,
+      });
+    } catch (error) {
+      console.error("BOARD_ARCHIVE_FAILED", error);
+      setArchiveDialog({
+        open: true,
+        title: "ARCHIVE FAILED",
+        message: "FAILED TO ARCHIVE BOARD. PLEASE TRY AGAIN.",
+        isError: true,
+      });
+    } finally {
+      setIsArchiving(false);
     }
   };
 
@@ -343,14 +416,22 @@ const StylingBoardPage = () => {
             <button
               type="button"
               onClick={saveBoardAsPng}
-              disabled={!placedItems.length || isSaving}
+              disabled={!placedItems.length || isSaving || isArchiving}
             >
               {isSaving ? "SAVING..." : "SAVE BOARD"}
             </button>
             <button
               type="button"
+              className="styling-archive-button"
+              onClick={archiveBoard}
+              disabled={!placedItems.length || isSaving || isArchiving}
+            >
+              {isArchiving ? "ARCHIVING..." : "ARCHIVE BOARD"}
+            </button>
+            <button
+              type="button"
               onClick={clearBoard}
-              disabled={!placedItems.length}
+              disabled={!placedItems.length || isSaving || isArchiving}
             >
               CLEAR BOARD
             </button>
@@ -442,6 +523,39 @@ const StylingBoardPage = () => {
           )}
         </div>
       </section>
+
+      {archiveDialog.open && (
+        <div
+          className="styling-dialog-backdrop"
+          role="presentation"
+          onClick={closeArchiveDialog}
+        >
+          <div
+            className="styling-dialog"
+            role="dialog"
+            aria-modal="true"
+            aria-labelledby="styling-archive-dialog-title"
+            onClick={(event) => event.stopPropagation()}
+          >
+            <h3
+              id="styling-archive-dialog-title"
+              className={`styling-dialog-title ${archiveDialog.isError ? "is-error" : ""}`}
+            >
+              {archiveDialog.title}
+            </h3>
+            <p className="styling-dialog-text">{archiveDialog.message}</p>
+            <div className="styling-dialog-actions">
+              <button
+                type="button"
+                className="styling-dialog-button"
+                onClick={closeArchiveDialog}
+              >
+                OK
+              </button>
+            </div>
+          </div>
+        </div>
+      )}
     </div>
   );
 };
