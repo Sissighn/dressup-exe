@@ -158,6 +158,10 @@
   cursor: pointer;
 }
 
+.styling-board-toolbar .styling-archive-button {
+  background: var(--accent-pink);
+}
+
 .styling-board-toolbar button:disabled {
   opacity: 0.4;
   cursor: not-allowed;
@@ -239,6 +243,57 @@
 .styling-controls-grid .is-danger {
   grid-column: span 2;
   background: #fbe7e7;
+}
+
+.styling-dialog-backdrop {
+  position: fixed;
+  inset: 0;
+  background: rgba(0, 0, 0, 0.4);
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  padding: 24px;
+  z-index: 1000;
+}
+
+.styling-dialog {
+  width: min(100%, 420px);
+  border: 2px solid var(--border-color);
+  background: #fff;
+  padding: 24px;
+  box-shadow: 8px 8px 0 #000;
+}
+
+.styling-dialog-title {
+  margin: 0 0 10px;
+  font-family: var(--font-serif);
+  font-size: 1.4rem;
+}
+
+.styling-dialog-title.is-error {
+  color: #a12626;
+}
+
+.styling-dialog-text {
+  margin: 0;
+  font-size: 0.86rem;
+  line-height: 1.5;
+}
+
+.styling-dialog-actions {
+  display: flex;
+  justify-content: flex-end;
+  margin-top: 18px;
+}
+
+.styling-dialog-button {
+  border: 1px solid var(--border-color);
+  background: var(--accent-yellow);
+  min-height: 38px;
+  padding: 0 18px;
+  font-size: 0.74rem;
+  font-weight: 800;
+  cursor: pointer;
 }
 
 @media (max-width: 1100px) {
