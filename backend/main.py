@@ -124,6 +124,11 @@ class StylingBoardExportRequest(BaseModel):
     items: list[StylingPlacedItem]
 
 
+class ArchiveLookRequest(BaseModel):
+    image_url: Optional[str] = None
+    outfit_url: Optional[str] = None
+
+
 def _b64url_encode(data: bytes) -> str:
     return base64.urlsafe_b64encode(data).rstrip(b"=").decode("utf-8")
 
@@ -256,6 +261,88 @@ def _get_user_for_actor(actor: dict, db: Session) -> Optional[User]:
     if actor.get("role") != "user":
         return None
     return db.query(User).filter(User.email == actor.get("subject", "")).first()
+
+
+def _extract_upload_filename_from_url(file_url: str) -> str:
+    return os.path.basename((file_url or "").split("?")[0])
+
+
+def _is_actor_owned_look_source(filename: str, actor: dict) -> bool:
+    owner_key = actor.get("owner_key", "")
+    if not filename or not owner_key:
+        return False
+
+    return filename.startswith(f"outfit_result_temp_av_{owner_key}_")
+
+
+def _is_actor_owned_board_source(filename: str, actor: dict) -> bool:
+    owner_key = actor.get("owner_key", "")
+    if not filename or not owner_key:
+        return False
+
+    return filename.startswith(f"styling_board_{owner_key}_")
+
+
+def _archive_uploaded_image(
+    *, file_url: str, actor: dict, archive_prefix: str, source_guard
+) -> dict:
+    filename = _extract_upload_filename_from_url(file_url)
+    source_path = os.path.join(UPLOAD_DIR, filename)
+
+    if not os.path.exists(source_path):
+        raise HTTPException(status_code=404, detail="Source image not found")
+
+    if not source_guard(filename, actor):
+        raise HTTPException(
+            status_code=403,
+            detail="Not permitted to archive this image",
+        )
+
+    archived_filename = f"{archive_prefix}_{actor['owner_key']}_{int(time.time())}.png"
+    dest_path = os.path.join(UPLOAD_DIR, archived_filename)
+    shutil.copy2(source_path, dest_path)
+
+    return {
+        "status": "success",
+        "archived_url": f"http://localhost:8000/uploads/{archived_filename}",
+        "id": archived_filename,
+    }
+
+
+def _list_archived_assets(actor: dict, archive_prefix: str) -> list[dict]:
+    assets = []
+    if not os.path.exists(UPLOAD_DIR):
+        return assets
+
+    owner_prefix = f"{archive_prefix}_{actor['owner_key']}_"
+    for file in os.listdir(UPLOAD_DIR):
+        if file.startswith(owner_prefix):
+            assets.append(
+                {
+                    "id": file,
+                    "url": f"http://localhost:8000/uploads/{file}",
+                    "date": os.path.getctime(os.path.join(UPLOAD_DIR, file)),
+                }
+            )
+
+    assets.sort(key=lambda item: item["date"], reverse=True)
+    return assets
+
+
+def _delete_archived_asset(filename: str, actor: dict, archive_prefix: str) -> dict:
+    owner_prefix = f"{archive_prefix}_{actor['owner_key']}_"
+    if not filename.startswith(owner_prefix):
+        raise HTTPException(
+            status_code=403,
+            detail="Not permitted to delete this file",
+        )
+
+    file_path = os.path.join(UPLOAD_DIR, filename)
+    if not os.path.exists(file_path):
+        raise HTTPException(status_code=404, detail="File not found")
+
+    os.remove(file_path)
+    return {"status": "success", "message": f"Asset {filename} deleted"}
 
 
 @app.post("/auth/register")
@@ -416,71 +503,63 @@ import time
 
 
 @app.post("/archive-look")
-async def archive_look(payload: dict, actor=Depends(_get_current_actor)):
+async def archive_look(payload: ArchiveLookRequest, actor=Depends(_get_current_actor)):
     """Kopiert das temporäre Outfit-Bild in ein dauerhaftes Archiv-Bild"""
     try:
-        temp_url = payload.get("outfit_url", "")
+        temp_url = payload.image_url or payload.outfit_url or ""
         if not temp_url:
             raise HTTPException(status_code=400, detail="No URL provided")
 
-        # Filename extrahieren (z.B. outfit_result_temp_av.png)
-        filename = temp_url.split("/")[-1].split("?")[0]
-        source_path = os.path.join(UPLOAD_DIR, filename)
+        return _archive_uploaded_image(
+            file_url=temp_url,
+            actor=actor,
+            archive_prefix="archived_look",
+            source_guard=_is_actor_owned_look_source,
+        )
+    except Exception as e:
+        raise HTTPException(status_code=500, detail=str(e))
 
-        if not os.path.exists(source_path):
-            raise HTTPException(status_code=404, detail="Source image not found")
 
-        # Neuen Namen für das Archiv generieren
-        new_filename = f"archived_look_{actor['owner_key']}_{int(time.time())}.png"
-        dest_path = os.path.join(UPLOAD_DIR, new_filename)
+@app.post("/archive-board")
+async def archive_board(payload: ArchiveLookRequest, actor=Depends(_get_current_actor)):
+    try:
+        board_url = payload.image_url or payload.outfit_url or ""
+        if not board_url:
+            raise HTTPException(status_code=400, detail="No URL provided")
 
-        # Datei kopieren
-        shutil.copy2(source_path, dest_path)
-
-        return {
-            "status": "success",
-            "archived_url": f"http://localhost:8000/uploads/{new_filename}",
-        }
+        return _archive_uploaded_image(
+            file_url=board_url,
+            actor=actor,
+            archive_prefix="archived_board",
+            source_guard=_is_actor_owned_board_source,
+        )
     except Exception as e:
         raise HTTPException(status_code=500, detail=str(e))
 
 
 @app.get("/gallery")
 async def get_gallery(actor=Depends(_get_current_actor)):
-    outfits = []
-    if not os.path.exists(UPLOAD_DIR):
-        return []
+    return _list_archived_assets(actor, "archived_look")
 
-    for file in os.listdir(UPLOAD_DIR):
-        # NUR Bilder anzeigen, die explizit archiviert wurden
-        if file.startswith(f"archived_look_{actor['owner_key']}_"):
-            outfits.append(
-                {
-                    "id": file,
-                    "url": f"http://localhost:8000/uploads/{file}",
-                    "date": os.path.getctime(os.path.join(UPLOAD_DIR, file)),
-                }
-            )
-    outfits.sort(key=lambda x: x["date"], reverse=True)
-    return outfits
+
+@app.get("/boards")
+async def get_boards(actor=Depends(_get_current_actor)):
+    return _list_archived_assets(actor, "archived_board")
 
 
 @app.delete("/delete-look/{filename}")
 async def delete_look(filename: str, actor=Depends(_get_current_actor)):
     """Löscht einen archivierten Look vom Server"""
     try:
-        # Sicherheitssperre: Nur Dateien löschen, die zum Archiv gehören
-        if not filename.startswith(f"archived_look_{actor['owner_key']}_"):
-            raise HTTPException(
-                status_code=403, detail="Not permitted to delete this file"
-            )
+        return _delete_archived_asset(filename, actor, "archived_look")
+    except Exception as e:
+        raise HTTPException(status_code=500, detail=str(e))
 
-        file_path = os.path.join(UPLOAD_DIR, filename)
-        if os.path.exists(file_path):
-            os.remove(file_path)
-            return {"status": "success", "message": f"Look {filename} deleted"}
-        else:
-            raise HTTPException(status_code=404, detail="File not found")
+
+@app.delete("/delete-board/{filename}")
+async def delete_board(filename: str, actor=Depends(_get_current_actor)):
+    try:
+        return _delete_archived_asset(filename, actor, "archived_board")
     except Exception as e:
         raise HTTPException(status_code=500, detail=str(e))
 
