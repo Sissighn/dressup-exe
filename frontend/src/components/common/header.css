@@ -21,21 +21,23 @@
   display: flex;
   flex-grow: 1;
   background-color: var(--bg-paper);
+  min-width: 0;
 }
 
 .nav-item {
-  padding: 0 2rem;
+  padding: 0 1.35rem;
   display: flex;
   align-items: center;
   height: 100%;
   border-right: 1px solid var(--border-color);
-  font-size: 0.9rem;
+  font-size: 0.82rem;
   text-transform: uppercase;
   letter-spacing: 1px;
   text-decoration: none;
   color: var(--text-main);
   cursor: pointer;
   transition: background 0.2s;
+  white-space: nowrap;
 }
 
 .nav-item:hover {
