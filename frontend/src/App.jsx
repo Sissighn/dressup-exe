@@ -6,6 +6,7 @@ import Wardrobe from "./pages/Wardrobe";
 import Avatar from "./pages/Avatar";
 import Closet from "./pages/Closet";
 import Gallery from "./pages/Gallery";
+import Boards from "./pages/Boards";
 import StylingBoard from "./pages/StylingBoard";
 import About from "./pages/About";
 import Auth from "./pages/Auth";
@@ -159,6 +160,7 @@ function App() {
           <Route path="/closet" element={<Closet />} />
           <Route path="/styling" element={<StylingBoard />} />
           <Route path="/gallery" element={<Gallery />} />
+          <Route path="/boards" element={<Boards />} />
           <Route path="/about" element={<About />} />
         </Routes>
       </MainLayout>
