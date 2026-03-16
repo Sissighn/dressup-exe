@@ -7,6 +7,7 @@ const PAGE_NAMES = {
   "/closet": "CLOSET",
   "/styling": "STYLING LAB",
   "/gallery": "LOOKBOOK",
+  "/boards": "STYLE BOARDS",
   "/avatar": "MY MODEL",
   "/about": "ABOUT",
 };
