@@ -66,7 +66,9 @@ const Boards = () => {
         <div className="boards-hero-copy">
           <div className="boards-editorial-meta">
             <span className="boards-kicker">CURATED COMPOSITIONS</span>
-            <span className="boards-meta-line">EDITION 01 / DIGITAL ARCHIVE</span>
+            <span className="boards-meta-line">
+              EDITION 01 / DIGITAL ARCHIVE
+            </span>
           </div>
           <h1>STYLE BOARDS.</h1>
           <p>
