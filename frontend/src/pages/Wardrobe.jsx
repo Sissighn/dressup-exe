@@ -168,7 +168,7 @@ const Wardrobe = () => {
       link.click();
       document.body.removeChild(link);
       window.URL.revokeObjectURL(url);
-    } catch (error) {
+    } catch {
       alert("DOWNLOAD FAILED.");
     }
   };
