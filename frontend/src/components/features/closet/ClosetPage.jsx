@@ -186,7 +186,7 @@ const ClosetPage = () => {
       });
       setSelectedItemIds([]);
       setIsSelectionMode(false);
-    } catch (error) {
+    } catch {
       setStatusMessage({ type: "error", text: "CONNECTION INTERRUPTED." });
     }
   };
@@ -250,6 +250,7 @@ const ClosetPage = () => {
       </div>
 
       <UploadModal
+        key={`${currentUploadIndex}-${uploadCategory}-${isModalOpen}`}
         isOpen={isModalOpen}
         onClose={resetUploadFlow}
         onConfirm={handleConfirmUpload}
