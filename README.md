@@ -112,9 +112,18 @@ Create a `.env` file in `backend/`:
 ```bash
 GOOGLE_API_KEY=your_google_ai_key_here
 AUTH_SECRET_KEY=your_long_random_secret_here
+APP_BASE_URL=http://localhost:8000
+PUBLIC_ASSET_BASE_URL=http://localhost:8000
+CORS_ALLOWED_ORIGINS=http://localhost:5173,http://127.0.0.1:5173,http://localhost:3000
 ```
 
 `AUTH_SECRET_KEY` should be a long random secret (high entropy), unique per environment.
+
+For the frontend, optional Vite environment variables can be placed in `frontend/.env`:
+
+```bash
+VITE_API_BASE_URL=http://127.0.0.1:8000
+```
 
 ### 4) Run backend
 
@@ -132,6 +141,21 @@ npm run dev
 Frontend: http://localhost:5173
 Backend: http://localhost:8000
 ```
+
+### Docker setup
+
+The full stack can also be built and started with Docker Compose:
+
+```bash
+docker compose up --build
+```
+
+Docker URLs:
+
+- Frontend: `http://localhost:5173`
+- Backend: `http://127.0.0.1:8000`
+
+The Docker setup persists generated assets in `backend/uploads/` and the SQLite database in `database/`.
 
 ---
 
