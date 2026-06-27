@@ -2,7 +2,6 @@ import React from "react";
 
 const ClothingSelector = ({
   label,
-  items,
   currentItem,
   selectedItem,
   onPrev,
