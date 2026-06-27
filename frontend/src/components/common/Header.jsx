@@ -5,15 +5,11 @@ import "./header.css"; // Pass den Pfad bei Bedarf an
 const Header = ({ onLogout, authUser, profileImage }) => {
   const location = useLocation();
   const [isMenuOpen, setIsMenuOpen] = useState(false);
-  const [imageLoadError, setImageLoadError] = useState(false);
+  const [failedProfileImage, setFailedProfileImage] = useState("");
   const menuRef = useRef(null);
 
   const isGuest = authUser?.role === "guest";
   const isWardrobePage = location.pathname === "/";
-
-  useEffect(() => {
-    setImageLoadError(false);
-  }, [profileImage]);
 
   useEffect(() => {
     const handleClickOutside = (event) => {
@@ -80,12 +76,12 @@ const Header = ({ onLogout, authUser, profileImage }) => {
                 overflow: "hidden",
               }}
             >
-              {profileImage && !imageLoadError ? (
+              {profileImage && failedProfileImage !== profileImage ? (
                 <img
                   src={profileImage}
                   alt="Profile"
                   className="profile-avatar-image"
-                  onError={() => setImageLoadError(true)}
+                  onError={() => setFailedProfileImage(profileImage)}
                   style={{
                     width: "100%",
                     height: "100%",
