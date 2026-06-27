@@ -37,7 +37,7 @@ const Gallery = () => {
         method: "DELETE",
       });
       if (res.ok) setLooks(looks.filter((l) => l.id !== pendingDeleteId));
-    } catch (e) {
+    } catch {
       console.error("ERROR.");
     } finally {
       setPendingDeleteId(null);
