@@ -28,6 +28,7 @@ from PIL import ImageDraw
 
 # Lokale Importe
 from database import Base, engine, get_db, ClothingItem, User
+from settings import build_upload_url, get_cors_allowed_origins
 import services
 
 load_dotenv()
@@ -39,7 +40,7 @@ app = FastAPI()
 # Erlaubt dem Frontend (Port 5173) alle Methoden (GET, POST, DELETE, OPTIONS)
 app.add_middleware(
     CORSMiddleware,
-    allow_origins=["http://localhost:5173"],
+    allow_origins=get_cors_allowed_origins(),
     allow_credentials=True,
     allow_methods=["*"],
     allow_headers=["*"],
@@ -50,7 +51,7 @@ BASE_DIR = os.path.dirname(os.path.abspath(__file__))
 UPLOAD_DIR = os.path.join(BASE_DIR, "uploads")
 os.makedirs(UPLOAD_DIR, exist_ok=True)
 
-# Statische Dateien mounten (Damit http://localhost:8000/uploads/... funktioniert)
+# Statische Dateien mounten (Damit /uploads/... als Asset-Pfad funktioniert)
 app.mount("/uploads", StaticFiles(directory=UPLOAD_DIR), name="uploads")
 
 
@@ -304,7 +305,7 @@ def _archive_uploaded_image(
 
     return {
         "status": "success",
-        "archived_url": f"http://localhost:8000/uploads/{archived_filename}",
+        "archived_url": build_upload_url(archived_filename),
         "id": archived_filename,
     }
 
@@ -320,7 +321,7 @@ def _list_archived_assets(actor: dict, archive_prefix: str) -> list[dict]:
             assets.append(
                 {
                     "id": file,
-                    "url": f"http://localhost:8000/uploads/{file}",
+                    "url": build_upload_url(file),
                     "date": os.path.getctime(os.path.join(UPLOAD_DIR, file)),
                 }
             )
@@ -606,7 +607,7 @@ async def upload_item(
 
     # 2. SAUBERE URL GENERIEREN (Wichtig für das Frontend!)
     # Wir speichern NICHT den lokalen Pfad, sondern die Web-URL
-    image_url = f"http://localhost:8000/uploads/{final_filename}"
+    image_url = build_upload_url(final_filename)
 
     # 3. In Datenbank speichern
     new_item = ClothingItem(
@@ -701,7 +702,7 @@ async def export_styling_board(
 
         return {
             "status": "success",
-            "image_url": f"http://localhost:8000/uploads/{filename}",
+            "image_url": build_upload_url(filename),
         }
     except Exception as exc:
         raise HTTPException(status_code=500, detail=f"Board export failed: {exc}")
@@ -763,7 +764,7 @@ async def generate_avatar(
         with open(face_path, "wb") as f:
             shutil.copyfileobj(face_scan.file, f)
 
-        face_scan_url = f"http://localhost:8000/uploads/{os.path.basename(face_path)}"
+        face_scan_url = build_upload_url(os.path.basename(face_path))
 
         # Wir geben gender an die services weiter
         result = await services.try_gemini_generation(
