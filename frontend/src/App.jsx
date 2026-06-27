@@ -117,7 +117,7 @@ function App() {
     };
 
     validateSession();
-  }, [session?.token]);
+  }, [session]);
 
   const handleAuthSuccess = (nextSession) => {
     if (nextSession?.user?.role === "guest") {
