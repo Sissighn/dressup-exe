@@ -1,4 +1,4 @@
-import React, { useState, useEffect } from "react";
+import React, { useState } from "react";
 import styles from "./UploadModal.module.css";
 
 const UploadModal = ({
@@ -13,12 +13,6 @@ const UploadModal = ({
 }) => {
   const [modalUploadCategory, setModalUploadCategory] =
     useState(initialCategory);
-
-  useEffect(() => {
-    if (isOpen) {
-      setModalUploadCategory(initialCategory);
-    }
-  }, [isOpen, initialCategory]);
 
   if (!isOpen) return null;
 
