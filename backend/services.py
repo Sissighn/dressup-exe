@@ -2,6 +2,7 @@ import os
 from io import BytesIO
 from PIL import Image, ImageEnhance, ImageFilter, ImageOps
 import base64
+from settings import build_upload_url
 
 try:
     from rembg import remove as rembg_remove
@@ -19,6 +20,7 @@ os.makedirs(UPLOAD_DIR, exist_ok=True)
 TARGET_WIDTH = 1080
 TARGET_HEIGHT = 1920
 MAX_AVATAR_ATTEMPTS = 8
+MAX_OUTFIT_FRAMING_ATTEMPTS = 3
 
 
 def remove_background_from_image(image_path):
@@ -122,7 +124,7 @@ def build_avatar_prompt(height, weight, body_type, gender, attempt):
         f"\nCONTENT: A stunning, highly photorealistic full-body portrait of a {gender} with a {body_type} body type, featuring this exact face. "
         f"- Visible head to toe. "
         f"- Height: {height}cm, Weight: {weight}kg. "
-        f"- Clothing: High-quality sport white TANK top and grey leggings. "
+        f"- Clothing: High-quality white fitted tank top and simple neutral studio shorts, with bare lower legs visible. "
         f"- Pose: Standing upright, confident natural pose, facing camera. "
         f"- Lighting: Soft cinematic studio lighting to enhance facial features naturally. "
         f"- Background: Solid neutral grey studio background."
@@ -152,6 +154,38 @@ def save_generated_image(response, output_path):
                 return True
 
     return False
+
+
+def describe_generation_response(response):
+    candidates = getattr(response, "candidates", None) or []
+    if not candidates:
+        text = getattr(response, "text", "") or ""
+        return f"no candidates; text={text[:300]!r}"
+
+    details = []
+    for index, candidate in enumerate(candidates):
+        finish_reason = getattr(candidate, "finish_reason", None)
+        safety_ratings = getattr(candidate, "safety_ratings", None)
+        content = getattr(candidate, "content", None)
+        parts = getattr(content, "parts", None) or []
+        part_types = []
+
+        for part in parts:
+            if hasattr(part, "as_image") and part.as_image() is not None:
+                part_types.append("image")
+            elif hasattr(part, "inline_data") and part.inline_data is not None:
+                part_types.append("inline_data")
+            elif getattr(part, "text", None):
+                part_types.append(f"text={part.text[:180]!r}")
+            else:
+                part_types.append(type(part).__name__)
+
+        details.append(
+            f"candidate[{index}] finish_reason={finish_reason!r} "
+            f"parts={part_types!r} safety={safety_ratings!r}"
+        )
+
+    return " | ".join(details)
 
 
 async def is_full_body_avatar(client, generated_image_path):
@@ -238,9 +272,7 @@ async def try_gemini_generation(
                 continue
 
             resize_to_target(avatar_filename, TARGET_WIDTH, TARGET_HEIGHT)
-            generated_avatar_url = (
-                f"http://localhost:8000/uploads/{os.path.basename(avatar_filename)}"
-            )
+            generated_avatar_url = build_upload_url(os.path.basename(avatar_filename))
 
             if await is_full_body_avatar(client, avatar_filename):
                 return {
@@ -289,6 +321,59 @@ async def try_gemini_generation(
         return {"success": False, "error": str(e)}
 
 
+def build_outfit_try_on_prompt():
+    return (
+        "FASHION TRY-ON TASK: Create a premium photorealistic fashion catalog render in a vertical 9:16 frame, exactly 1080x1920. "
+        "Output ONE PERSON ONLY. No split-screen, no before/after, no collage, no duplicate body, no mirror copy. "
+        "Use IMAGE 1 only for the person's identity, face, hair, body proportions, stance, and camera-facing pose. "
+        "Do NOT preserve, copy, or continue any clothing from IMAGE 1. The tank top, grey leggings, shoes, or any base outfit from IMAGE 1 must be fully replaced. "
+        "Use IMAGE 2 as the only top reference and IMAGE 3 as the only bottom reference. Recreate their visible garment category, silhouette, color, texture, length, and fit. "
+        "If IMAGE 3 is a skirt, mini skirt, shorts, culottes, or any garment that exposes the legs, show natural bare legs below it unless IMAGE 3 itself clearly contains tights, leggings, stockings, or pants. "
+        "Never invent grey leggings, grey tights, underlayers, or long pants under a skirt or shorts. Remove all grey leggings from the base avatar. "
+        "If IMAGE 3 is a long skirt, maxi skirt, dress-like bottom, trousers, jeans, or leggings, render that garment faithfully and show the full hem/legs/feet composition according to the garment. "
+        "STRICT FRAMING: full body must be visible from the top of the head to the bottom of both feet, including shoes/feet fully inside the image. "
+        "Do not crop feet, ankles, shoes, legs, hands, hair, or head. Leave clear empty studio space above the head and below the feet. "
+        "Keep the camera zoomed out like a full-length fashion e-commerce photo, not a knee-up portrait. "
+        "Use a clean neutral grey studio background, natural studio lighting, sharp focus, realistic anatomy, and high-quality fabric detail. "
+        "Fill the image naturally without white bars, side borders, frames, or letterboxing."
+    )
+
+
+def build_outfit_fallback_prompt():
+    return (
+        "Create a photorealistic full-body fashion try-on portrait, vertical 9:16, one person only. "
+        "Use the first image for the person's face, hair, body proportions, and standing pose. "
+        "Dress the person in the top from the second image and the bottom garment from the third image. "
+        "The clothing from the first image is only a starting outfit and should be replaced by the selected garments. "
+        "If the third image is a skirt or shorts, show bare natural legs unless the third image clearly includes tights or leggings. "
+        "Do not add grey leggings under skirts or shorts. "
+        "Show the complete body from head to both feet, including shoes/feet fully visible, on a neutral grey studio background."
+    )
+
+
+def build_outfit_identity_correction_prompt():
+    return (
+        "Image editing task. Keep only ONE person in frame and remove any duplicate, split-screen, mirror, collage, or before/after layout. "
+        "Preserve the main subject identity, face, hair, body proportions, and pose from IMAGE 1. "
+        "Use IMAGE 2 and IMAGE 3 as the only clothing references. Do not preserve any clothing from IMAGE 1. "
+        "Fully remove the base avatar's grey leggings, tank top, and original outfit unless the matching garment is explicitly visible in IMAGE 2 or IMAGE 3. "
+        "If the bottom garment is a skirt or shorts, show natural bare legs below it unless IMAGE 3 clearly shows tights or leggings. "
+        "Return a premium single-person full-body 1080x1920 fashion catalog portrait on a clean neutral grey background. "
+        "Head, hair, hands, legs, ankles, shoes, and both feet must be fully visible."
+    )
+
+
+def build_outfit_framing_correction_prompt():
+    return (
+        "Image editing task. Change framing only and keep the same person identity and selected outfit. "
+        "Zoom out to a full-length fashion catalog portrait so the entire body is visible from top of head to bottom of both feet. "
+        "Both shoes/feet must be completely inside the frame with visible floor space below them. "
+        "Do not crop head, hair, hands, legs, ankles, shoes, or feet. "
+        "Do not add borders, white bars, side margins, or letterboxing. Keep a clean neutral grey studio background. "
+        "Do not reintroduce grey leggings or tights under skirts/shorts unless they are clearly present in the bottom reference image."
+    )
+
+
 async def try_gemini_outfit_generation(avatar_path, top_path, bottom_path):
     try:
         from google import genai
@@ -303,39 +388,46 @@ async def try_gemini_outfit_generation(avatar_path, top_path, bottom_path):
         with Image.open(bottom_path) as bottom_source:
             bottom_img = ImageOps.exif_transpose(bottom_source).convert("RGBA")
 
-        # Enforce a single-subject try-on result (no split screen / no duplicate person)
-        prompt = (
-            "STRICT MANDATE: Generate ONLY ONE PERSON in a single 9:16 portrait image (1080x1920). "
-            "Do NOT create split-screen, side-by-side, before/after, collage, mirror duplicate, or multiple people. "
-            "Use IMAGE 1 as the identity and pose reference. Replace clothing with garments inspired by IMAGE 2 (top) and IMAGE 3 (bottom). "
-            "CRITICAL FRAMING: keep the same camera distance as IMAGE 1 and do NOT zoom in. "
-            "Keep full-body framing from head to toes, with both feet and top of head fully visible in frame. "
-            "Leave some empty space above the head and below the feet. "
-            "Fill the entire frame naturally (no white bars, no side borders, no letterboxing). "
-            "Background must be clean and neutral. "
-            "Output must be one single full-body avatar only."
-        )
-
-        response = client.models.generate_content(
-            model="gemini-2.5-flash-image",
-            contents=[prompt, avatar_img, top_img, bottom_img],
-            config=types.GenerateContentConfig(
-                safety_settings=[
-                    types.SafetySetting(
-                        category="HARM_CATEGORY_SEXUALLY_EXPLICIT", threshold="OFF"
-                    )
-                ]
-            ),
-        )
-
         outfit_filename = os.path.join(
             UPLOAD_DIR, f"outfit_result_{os.path.basename(avatar_path)}"
         )
 
-        image_saved = save_generated_image(response, outfit_filename)
+        image_saved = False
+        last_response_debug = "No generation response."
+        for prompt_attempt, prompt in enumerate(
+            [build_outfit_try_on_prompt(), build_outfit_fallback_prompt()],
+            start=1,
+        ):
+            response = client.models.generate_content(
+                model="gemini-2.5-flash-image",
+                contents=[prompt, avatar_img, top_img, bottom_img],
+                config=types.GenerateContentConfig(
+                    safety_settings=[
+                        types.SafetySetting(
+                            category="HARM_CATEGORY_SEXUALLY_EXPLICIT",
+                            threshold="OFF",
+                        )
+                    ]
+                ),
+            )
+
+            image_saved = save_generated_image(response, outfit_filename)
+            if image_saved:
+                break
+
+            last_response_debug = describe_generation_response(response)
+            print(
+                f"⚠️ Gemini outfit generation returned no image on prompt attempt {prompt_attempt}: {last_response_debug}"
+            )
 
         if not image_saved:
-            return {"success": False, "error": "AI hat kein Bild generiert."}
+            return {
+                "success": False,
+                "error": (
+                    "AI hat kein Bild generiert. Gemini returned no image part. "
+                    f"{last_response_debug}"
+                ),
+            }
 
         # Format fixieren bildfüllend (ohne Letterbox-Ränder)
         resize_to_target(outfit_filename, 1080, 1920)
@@ -359,14 +451,7 @@ async def try_gemini_outfit_generation(avatar_path, top_path, bottom_path):
             )
 
             if not is_single_subject:
-                correction_prompt = (
-                    "Image editing task. Keep only ONE person in frame. "
-                    "Remove any second person, duplicate, mirror, split-screen, or before/after layout. "
-                    "Preserve the same main subject identity from IMAGE 1 and apply the outfit style from IMAGE 2 and IMAGE 3. "
-                    "Return a single full-body 1080x1920 portrait from head to toes on a clean neutral background. "
-                    "Do not zoom in. Keep space above head and below feet. "
-                    "No white bars, no side borders, no letterboxing."
-                )
+                correction_prompt = build_outfit_identity_correction_prompt()
 
                 with Image.open(outfit_filename) as generated_outfit:
                     fixed_response = client.models.generate_content(
@@ -384,16 +469,14 @@ async def try_gemini_outfit_generation(avatar_path, top_path, bottom_path):
                 if fixed_saved:
                     resize_to_target(outfit_filename, 1080, 1920)
 
-            # Ensure full-body framing (head + feet visible). If not, run one framing correction pass.
-            if not await is_full_body_avatar(client, outfit_filename):
-                framing_correction_prompt = (
-                    "Image editing task. Keep the same person identity and same outfit exactly. "
-                    "Change framing only: zoom out so the entire body is visible from head to both feet. "
-                    "Do not crop head, hands, legs, ankles, or feet. "
-                    "Keep a 1080x1920 portrait with empty space above head and below feet, one person only, neutral background. "
-                    "Fill frame edge-to-edge without white side borders or letterboxing."
-                )
+            framing_correction_prompt = build_outfit_framing_correction_prompt()
+            for attempt in range(1, MAX_OUTFIT_FRAMING_ATTEMPTS + 1):
+                if await is_full_body_avatar(client, outfit_filename):
+                    break
 
+                print(
+                    f"⚠️ Outfit framing attempt {attempt}: feet/head not fully visible. Reframing."
+                )
                 with Image.open(outfit_filename) as generated_outfit:
                     reframed_response = client.models.generate_content(
                         model="gemini-2.5-flash-image",
@@ -416,7 +499,7 @@ async def try_gemini_outfit_generation(avatar_path, top_path, bottom_path):
 
         return {
             "success": True,
-            "outfit_url": f"http://localhost:8000/uploads/{os.path.basename(outfit_filename)}",
+            "outfit_url": build_upload_url(os.path.basename(outfit_filename)),
         }
     except Exception as e:
         return {"success": False, "error": str(e)}
