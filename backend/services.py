@@ -1,3 +1,4 @@
+import logging
 import os
 from io import BytesIO
 from PIL import Image, ImageEnhance, ImageFilter, ImageOps
@@ -21,6 +22,7 @@ TARGET_WIDTH = 1080
 TARGET_HEIGHT = 1920
 MAX_AVATAR_ATTEMPTS = 8
 MAX_OUTFIT_FRAMING_ATTEMPTS = 3
+logger = logging.getLogger(__name__)
 
 
 def remove_background_from_image(image_path):
@@ -203,8 +205,8 @@ async def is_full_body_avatar(client, generated_image_path):
                 ],
             )
         return (evaluation.text or "").strip().upper().startswith("PASS")
-    except Exception as e:
-        print(f"⚠️ Full-body validation skipped: {e}")
+    except Exception:
+        logger.warning("Full-body validation skipped", exc_info=True)
         return True
 
 
@@ -212,14 +214,14 @@ def resize_to_target(image_path, target_width=1080, target_height=1920):
     """Skaliert Bild exakt auf 1080x1920 ohne Verzerrung."""
     try:
         if not os.path.exists(image_path):
-            print(f"⚠️ Datei nicht gefunden für Resize: {image_path}")
+            logger.warning("Image not found for resize: %s", image_path)
             return
 
         with Image.open(image_path) as img:
             if img.size == (target_width, target_height):
                 return
 
-            print(f"📏 Anpassung auf exakt {target_width}x{target_height}...")
+            logger.info("Resizing image to %sx%s", target_width, target_height)
             target_ratio = target_width / target_height
             img_ratio = img.width / img.height
 
@@ -235,9 +237,9 @@ def resize_to_target(image_path, target_width=1080, target_height=1920):
                 img = img.crop((0, top, target_width, top + target_height))
 
             img.save(image_path)
-            print(f"✅ Finales Format fixiert.")
-    except Exception as e:
-        print(f"⚠️ Resize fehlgeschlagen: {e}")
+            logger.info("Image format normalized")
+    except Exception:
+        logger.warning("Resize failed", exc_info=True)
 
 
 async def try_gemini_generation(
@@ -280,8 +282,9 @@ async def try_gemini_generation(
                     "avatar_url": generated_avatar_url,
                 }
 
-            print(
-                f"⚠️ Attempt {attempt}: Generated avatar was not full-body. Retrying with a wider composition."
+            logger.info(
+                "Attempt %s: generated avatar was not full-body; retrying with wider composition",
+                attempt,
             )
 
             correction_prompt = (
@@ -416,8 +419,10 @@ async def try_gemini_outfit_generation(avatar_path, top_path, bottom_path):
                 break
 
             last_response_debug = describe_generation_response(response)
-            print(
-                f"⚠️ Gemini outfit generation returned no image on prompt attempt {prompt_attempt}: {last_response_debug}"
+            logger.warning(
+                "Gemini outfit generation returned no image on prompt attempt %s: %s",
+                prompt_attempt,
+                last_response_debug,
             )
 
         if not image_saved:
@@ -474,8 +479,9 @@ async def try_gemini_outfit_generation(avatar_path, top_path, bottom_path):
                 if await is_full_body_avatar(client, outfit_filename):
                     break
 
-                print(
-                    f"⚠️ Outfit framing attempt {attempt}: feet/head not fully visible. Reframing."
+                logger.info(
+                    "Outfit framing attempt %s: feet/head not fully visible; reframing",
+                    attempt,
                 )
                 with Image.open(outfit_filename) as generated_outfit:
                     reframed_response = client.models.generate_content(
@@ -494,8 +500,8 @@ async def try_gemini_outfit_generation(avatar_path, top_path, bottom_path):
                 )
                 if reframed_saved:
                     resize_to_target(outfit_filename, 1080, 1920)
-        except Exception as e:
-            print(f"⚠️ Single-subject validation skipped: {e}")
+        except Exception:
+            logger.warning("Single-subject validation skipped", exc_info=True)
 
         return {
             "success": True,
