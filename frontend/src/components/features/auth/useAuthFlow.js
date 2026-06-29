@@ -69,6 +69,7 @@ export const useAuthFlow = (onAuthSuccess) => {
       const endpoint = isRegister ? "/auth/register" : "/auth/login";
       const response = await fetch(`${API_BASE}${endpoint}`, {
         method: "POST",
+        credentials: "include",
         headers: { "Content-Type": "application/json" },
         body: JSON.stringify({ email, password }),
       });
@@ -80,7 +81,6 @@ export const useAuthFlow = (onAuthSuccess) => {
       }
 
       onAuthSuccess({
-        token: data.access_token,
         user: data.user,
       });
     } catch {
@@ -97,6 +97,7 @@ export const useAuthFlow = (onAuthSuccess) => {
     try {
       const response = await fetch(`${API_BASE}/auth/guest`, {
         method: "POST",
+        credentials: "include",
       });
       const data = await response.json();
 
@@ -106,7 +107,6 @@ export const useAuthFlow = (onAuthSuccess) => {
       }
 
       onAuthSuccess({
-        token: data.access_token,
         user: data.user,
       });
     } catch {

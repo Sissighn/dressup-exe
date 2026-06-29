@@ -22,22 +22,9 @@ export const getAuthSession = () => {
   }
 };
 
-const decodeTokenPayload = (token) => {
-  try {
-    const [, payload] = token.split(".");
-    if (!payload) return null;
-    const normalized = payload.replace(/-/g, "+").replace(/_/g, "/");
-    const padded = normalized + "=".repeat((4 - (normalized.length % 4)) % 4);
-    return JSON.parse(atob(padded));
-  } catch {
-    return null;
-  }
-};
-
 export const getSessionScope = (session = getAuthSession()) => {
   const role = session?.user?.role || "user";
-  const payload = decodeTokenPayload(session?.token || "");
-  const subject = payload?.sub || session?.user?.email || "anonymous";
+  const subject = session?.user?.email || "anonymous";
   return `${role}:${subject}`;
 };
 
@@ -73,16 +60,17 @@ export const clearScopedUserLocalData = (session = getAuthSession()) => {
 };
 
 export const authFetch = (path, options = {}) => {
-  const session = getAuthSession();
-  const token = session?.token;
-
   const headers = new Headers(options.headers || {});
-  if (token) {
-    headers.set("Authorization", `Bearer ${token}`);
-  }
 
   return fetch(`${API_BASE}${path}`, {
     ...options,
+    credentials: "include",
     headers,
   });
 };
+
+export const assetFetch = (url, options = {}) =>
+  fetch(url, {
+    ...options,
+    credentials: "include",
+  });
