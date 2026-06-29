@@ -11,6 +11,7 @@ import {
   getScopedItem,
   setScopedItem,
   removeScopedItem,
+  assetFetch,
 } from "../lib/authSession";
 
 const Wardrobe = () => {
@@ -112,7 +113,10 @@ const Wardrobe = () => {
 
     try {
       const fetchBlob = async (url) => {
-        const response = await fetch(url, { mode: "cors", cache: "no-cache" });
+        const response = await assetFetch(url, {
+          mode: "cors",
+          cache: "no-cache",
+        });
         if (!response.ok) throw new Error(`Fetch failed for ${url}`);
         return response.blob();
       };
@@ -158,7 +162,7 @@ const Wardrobe = () => {
   const handleDownload = async () => {
     if (!dressedAvatar) return;
     try {
-      const response = await fetch(dressedAvatar);
+      const response = await assetFetch(dressedAvatar);
       const blob = await response.blob();
       const url = window.URL.createObjectURL(blob);
       const link = document.createElement("a");

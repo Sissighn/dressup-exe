@@ -46,49 +46,46 @@ function App() {
 
   useEffect(() => {
     const validateSession = async () => {
-      if (!session?.token) {
-        setIsCheckingSession(false);
-        return;
-      }
-
       try {
         const response = await fetch(`${API_BASE}/auth/me`, {
-          headers: {
-            Authorization: `Bearer ${session.token}`,
-          },
+          credentials: "include",
         });
 
         if (!response.ok) {
           localStorage.removeItem(AUTH_STORAGE_KEY);
           setSession(null);
           setProfileImage("");
-        } else if (session?.user?.role === "user") {
+        } else {
+          const authUser = await response.json();
+          const nextSession = { user: authUser };
+          localStorage.setItem(AUTH_STORAGE_KEY, JSON.stringify(nextSession));
+          setSession(nextSession);
+
+          if (authUser?.role === "user") {
           const profileResponse = await fetch(`${API_BASE}/profile`, {
-            headers: {
-              Authorization: `Bearer ${session.token}`,
-            },
+            credentials: "include",
           });
 
           if (profileResponse.ok) {
             const profile = await profileResponse.json();
 
             if (profile.avatar_url) {
-              setScopedItem("userAvatar", profile.avatar_url, session);
+              setScopedItem("userAvatar", profile.avatar_url, nextSession);
             } else {
-              removeScopedItem("userAvatar", session);
+              removeScopedItem("userAvatar", nextSession);
             }
 
             const nextProfileImage =
               profile.face_scan_url || profile.avatar_url || "";
             if (nextProfileImage) {
-              setScopedItem("userProfileImage", nextProfileImage, session);
+              setScopedItem("userProfileImage", nextProfileImage, nextSession);
             } else {
-              removeScopedItem("userProfileImage", session);
+              removeScopedItem("userProfileImage", nextSession);
             }
             setProfileImage(nextProfileImage);
 
             if (profile.display_name) {
-              setScopedItem("userName", profile.display_name, session);
+              setScopedItem("userName", profile.display_name, nextSession);
             }
 
             const biometrics = {
@@ -101,11 +98,12 @@ function App() {
             setScopedItem(
               "userBiometrics",
               JSON.stringify(biometrics),
-              session,
+              nextSession,
             );
           }
         } else {
           setProfileImage("");
+        }
         }
       } catch {
         localStorage.removeItem(AUTH_STORAGE_KEY);
@@ -117,7 +115,7 @@ function App() {
     };
 
     validateSession();
-  }, [session]);
+  }, []);
 
   const handleAuthSuccess = (nextSession) => {
     if (nextSession?.user?.role === "guest") {
@@ -130,9 +128,17 @@ function App() {
     setSession(nextSession);
   };
 
-  const handleLogout = () => {
+  const handleLogout = async () => {
     if (session?.user?.role === "guest") {
       clearScopedUserLocalData(session);
+    }
+    try {
+      await fetch(`${API_BASE}/auth/logout`, {
+        method: "POST",
+        credentials: "include",
+      });
+    } catch {
+      // Local logout should still complete if the network is unavailable.
     }
     localStorage.removeItem(AUTH_STORAGE_KEY);
     setSession(null);
@@ -143,7 +149,7 @@ function App() {
     return null;
   }
 
-  if (!session?.token) {
+  if (!session?.user) {
     return <Auth onAuthSuccess={handleAuthSuccess} />;
   }
 
