@@ -5,5 +5,10 @@ node_modules/
 venv/
 backend/uploads/
 closet.db
+coverage/
+test-results/
+playwright-report/
+.coverage
+.pytest_cache/
 Icon*
 Clothes
