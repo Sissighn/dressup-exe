@@ -20,7 +20,9 @@ AUTH_COOKIE_SECURE = os.getenv("AUTH_COOKIE_SECURE", "false").lower() == "true"
 AUTH_COOKIE_SAMESITE = os.getenv("AUTH_COOKIE_SAMESITE", "lax").lower()
 MAX_UPLOAD_BYTES = int(os.getenv("MAX_UPLOAD_BYTES", str(10 * 1024 * 1024)))
 MAX_UPLOAD_PIXELS = int(os.getenv("MAX_UPLOAD_PIXELS", str(24_000_000)))
-UPLOAD_DIR = os.path.join(os.path.dirname(os.path.abspath(__file__)), "uploads")
+UPLOAD_DIR = os.getenv(
+    "UPLOAD_DIR", os.path.join(os.path.dirname(os.path.abspath(__file__)), "uploads")
+)
 os.makedirs(UPLOAD_DIR, exist_ok=True)
 
 
