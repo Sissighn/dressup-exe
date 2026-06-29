@@ -184,6 +184,36 @@ The Docker setup runs Alembic before starting the API, persists generated assets
 
 ---
 
+## Tests & Quality Gates
+
+Backend tests use `pytest` with FastAPI `TestClient`, temporary SQLite storage, and mocked AI/background-removal boundaries:
+
+```bash
+cd backend
+python -m pytest -q --cov=. --cov-report=term-missing
+```
+
+Frontend unit tests use Vitest + React Testing Library:
+
+```bash
+cd frontend
+npm run lint
+npm run test
+npm run build
+```
+
+The Playwright happy path runs against a mocked backend and covers guest login, avatar creation, closet upload, outfit generation, and archive:
+
+```bash
+cd frontend
+npx playwright install chromium
+npm run e2e
+```
+
+GitHub Actions runs backend tests, frontend lint/tests/build, Playwright E2E, production dependency audit, and Gitleaks secret scanning on pushes and pull requests.
+
+---
+
 ## Security & Deployment Notes
 
 - Authentication uses HttpOnly cookies and JWT validation with issuer, audience, issued-at, expiry, and token ID claims.
