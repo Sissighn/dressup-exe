@@ -43,6 +43,15 @@ const FaceScanUpload = ({
         )}
       </div>
 
+      <div className="face-scan-guidance">
+        <strong>PRIVATE FACE SCAN</strong>
+        <p>
+          Used only to create your digital twin and stored behind your signed-in
+          session. Use a clear front-facing photo with your full face visible,
+          natural light, no heavy blur, and no group photo.
+        </p>
+      </div>
+
       <button
         onClick={onGenerate}
         className="action-button"
