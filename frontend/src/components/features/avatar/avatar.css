@@ -1,4 +1,22 @@
 /* --- Upload / Form Styles (Avatar Page) --- */
+.avatar-page {
+  display: block;
+  overflow: auto;
+  padding: 4rem;
+}
+
+.avatar-page-title {
+  font-size: 3rem;
+  margin-bottom: 2rem;
+}
+
+.avatar-setup-grid {
+  display: grid;
+  grid-template-columns: minmax(0, 1fr) minmax(0, 1fr);
+  gap: 4rem;
+  align-items: start;
+}
+
 .form-section,
 .upload-section {
   background: white;
@@ -12,6 +30,38 @@
 }
 .upload-box:hover {
   background: #f9f9f9 !important;
+}
+
+.field-hint {
+  margin: 6px 0 0;
+  font-size: 10px;
+  font-weight: 700;
+  opacity: 0.55;
+}
+
+.field-hint.is-error {
+  color: #d90429;
+  opacity: 1;
+}
+
+.face-scan-guidance {
+  border: 1px solid var(--border-color);
+  background: var(--bg-paper);
+  margin-top: 14px;
+  padding: 12px;
+}
+
+.face-scan-guidance strong {
+  display: block;
+  font-family: "Courier New", Courier, monospace;
+  font-size: 11px;
+  margin-bottom: 6px;
+}
+
+.face-scan-guidance p {
+  margin: 0;
+  font-size: 12px;
+  line-height: 1.45;
 }
 
 .avatar-validation-overlay {
@@ -34,4 +84,30 @@
   box-shadow: 10px 10px 0px var(--accent-pink);
   width: min(92vw, 460px);
   text-align: center;
+}
+
+@media (max-width: 900px) {
+  .avatar-page {
+    padding: 2rem;
+  }
+
+  .avatar-setup-grid {
+    grid-template-columns: 1fr;
+    gap: 2rem;
+  }
+}
+
+@media (max-width: 560px) {
+  .avatar-page {
+    padding: 18px;
+  }
+
+  .avatar-page-title {
+    font-size: 2.35rem;
+  }
+
+  .form-section,
+  .upload-section {
+    padding: 16px;
+  }
 }
