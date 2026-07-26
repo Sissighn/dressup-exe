@@ -38,6 +38,8 @@ const Wardrobe = () => {
   });
 
   const [isGenerating, setIsGenerating] = useState(false);
+  const [generationStep, setGenerationStep] = useState("idle");
+  const [toast, setToast] = useState(null);
   const [archiveDialog, setArchiveDialog] = useState({
     open: false,
     title: "",
@@ -90,6 +92,32 @@ const Wardrobe = () => {
     fetchClosetItems();
   }, []);
 
+  useEffect(() => {
+    if (!toast) return undefined;
+    const timeoutId = window.setTimeout(() => setToast(null), 4200);
+    return () => window.clearTimeout(timeoutId);
+  }, [toast]);
+
+  useEffect(() => {
+    if (!isGenerating) return undefined;
+
+    const timedSteps = [
+      { delay: 1200, step: "generating" },
+      { delay: 9000, step: "validating" },
+      { delay: 18000, step: "finalizing" },
+    ];
+
+    const timers = timedSteps.map(({ delay, step }) =>
+      window.setTimeout(() => setGenerationStep(step), delay),
+    );
+
+    return () => timers.forEach((timer) => window.clearTimeout(timer));
+  }, [isGenerating]);
+
+  const showToast = ({ title, message, tone = "error" }) => {
+    setToast({ title, message, tone });
+  };
+
   const nextTop = () =>
     tops.length && setCurrentTopIndex((p) => (p + 1) % tops.length);
   const prevTop = () =>
@@ -106,9 +134,24 @@ const Wardrobe = () => {
 
   // --- DIE TRY-ON LOGIK ---
   const handleTryOn = async () => {
-    if (!userAvatar || !selectedTop || !selectedBottom) return;
+    if (!userAvatar) {
+      showToast({
+        title: "MODEL REQUIRED",
+        message: "Create your digital model before trying on an outfit.",
+      });
+      return;
+    }
+
+    if (!selectedTop || !selectedBottom) {
+      showToast({
+        title: "OUTFIT INCOMPLETE",
+        message: "Select one top and one bottom item before generating.",
+      });
+      return;
+    }
 
     setIsGenerating(true);
+    setGenerationStep("uploading");
     setDressedAvatar(null);
 
     try {
@@ -131,24 +174,38 @@ const Wardrobe = () => {
       formData.append("top_image", topBlob, "top.png");
       formData.append("bottom_image", btmBlob, "bottom.png");
 
+      setGenerationStep("generating");
       const response = await authFetch("/try-on-outfit", {
         method: "POST",
         body: formData,
       });
 
       if (response.ok) {
+        setGenerationStep("finalizing");
         const result = await response.json();
         const newUrl = `${result.outfit_url}?t=${Date.now()}`;
         setDressedAvatar(newUrl);
+        showToast({
+          title: "LOOK READY",
+          message: "Your generated outfit is ready to review.",
+          tone: "success",
+        });
       } else {
         const error = await response.json();
-        alert(`AI Error: ${error.detail || "Failed to generate outfit"}`);
+        showToast({
+          title: "AI GENERATION FAILED",
+          message: error.detail || "Failed to generate outfit.",
+        });
       }
     } catch (error) {
       console.error(error);
-      alert("Connection failed. Check if backend is running.");
+      showToast({
+        title: "CONNECTION FAILED",
+        message: "Check if the backend is running and try again.",
+      });
     } finally {
       setIsGenerating(false);
+      setGenerationStep("idle");
     }
   };
 
@@ -173,7 +230,10 @@ const Wardrobe = () => {
       document.body.removeChild(link);
       window.URL.revokeObjectURL(url);
     } catch {
-      alert("DOWNLOAD FAILED.");
+      showToast({
+        title: "DOWNLOAD FAILED",
+        message: "The look could not be downloaded. Please try again.",
+      });
     }
   };
 
@@ -221,6 +281,7 @@ const Wardrobe = () => {
           dressedAvatar={dressedAvatar}
           selectedTop={selectedTop}
           selectedBottom={selectedBottom}
+          hasAvatar={Boolean(userAvatar)}
           onTryOn={handleTryOn}
           onDownload={handleDownload}
           onArchive={handleArchive}
@@ -230,9 +291,11 @@ const Wardrobe = () => {
 
         <AvatarDisplay
           isGenerating={isGenerating}
+          generationStep={generationStep}
           displayImage={displayImage}
           selectedTop={selectedTop}
           selectedBottom={selectedBottom}
+          onCreateModel={() => navigate("/avatar")}
         />
 
         <div className="right-panel">
@@ -244,6 +307,8 @@ const Wardrobe = () => {
             onPrev={prevTop}
             onNext={nextTop}
             onSelect={setSelectedTop}
+            emptyMessage="Upload first top"
+            onEmptyAction={() => navigate("/closet")}
           />
           <ClothingSelector
             label="BOTTOMS"
@@ -253,9 +318,27 @@ const Wardrobe = () => {
             onPrev={prevBottom}
             onNext={nextBottom}
             onSelect={setSelectedBottom}
+            emptyMessage="Add bottom item"
+            onEmptyAction={() => navigate("/closet")}
           />
         </div>
       </div>
+
+      {toast && (
+        <div className="wardrobe-toast-stack" role="status" aria-live="polite">
+          <div className={`wardrobe-toast ${toast.tone}`}>
+            <strong>{toast.title}</strong>
+            <span>{toast.message}</span>
+            <button
+              type="button"
+              aria-label="Dismiss notification"
+              onClick={() => setToast(null)}
+            >
+              x
+            </button>
+          </div>
+        </div>
+      )}
 
       {archiveDialog.open && (
         <div
