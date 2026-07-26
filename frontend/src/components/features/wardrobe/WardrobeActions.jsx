@@ -35,6 +35,7 @@ const WardrobeActions = ({
   dressedAvatar,
   selectedTop,
   selectedBottom,
+  hasAvatar,
   onTryOn,
   onDownload,
   onArchive,
@@ -76,11 +77,11 @@ const WardrobeActions = ({
         <button
           className="action-button wardrobe-action-button"
           onClick={onTryOn}
-          disabled={!selectedTop || !selectedBottom || isGenerating}
+          disabled={!hasAvatar || !selectedTop || !selectedBottom || isGenerating}
           style={{
             ...baseButtonStyle,
             background:
-              !selectedTop || !selectedBottom || isGenerating
+              !hasAvatar || !selectedTop || !selectedBottom || isGenerating
                 ? "#ccc"
                 : "black",
             color: "white",
@@ -117,6 +118,26 @@ const WardrobeActions = ({
             </ActionLabel>
           )}
         </button>
+
+        {!hasAvatar && (
+          <div className="wardrobe-next-step">
+            <strong>Create model</strong>
+            <span>Build your digital twin before generating outfit looks.</span>
+          </div>
+        )}
+
+        {hasAvatar && (!selectedTop || !selectedBottom) && (
+          <div className="wardrobe-next-step">
+            <strong>Complete outfit</strong>
+            <span>
+              {!selectedTop && !selectedBottom
+                ? "Select a top and a bottom item."
+                : !selectedTop
+                  ? "Select one top item."
+                  : "Select one bottom item."}
+            </span>
+          </div>
+        )}
 
         {dressedAvatar && (
           <>
