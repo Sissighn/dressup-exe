@@ -103,6 +103,9 @@ const BiometricsForm = ({ formData, onInputChange, validation }) => {
             name="height"
             value={formData.height}
             onChange={onInputChange}
+            min="80"
+            max="250"
+            inputMode="numeric"
             placeholder="175"
             style={{
               width: "100%",
@@ -114,6 +117,9 @@ const BiometricsForm = ({ formData, onInputChange, validation }) => {
               boxSizing: "border-box",
             }}
           />
+          <p className={`field-hint ${validation?.height ? "is-error" : ""}`}>
+            80-250 cm
+          </p>
         </div>
         <div className="input-group">
           <label
@@ -131,6 +137,9 @@ const BiometricsForm = ({ formData, onInputChange, validation }) => {
             name="weight"
             value={formData.weight}
             onChange={onInputChange}
+            min="25"
+            max="300"
+            inputMode="numeric"
             placeholder="65"
             style={{
               width: "100%",
@@ -142,6 +151,9 @@ const BiometricsForm = ({ formData, onInputChange, validation }) => {
               boxSizing: "border-box",
             }}
           />
+          <p className={`field-hint ${validation?.weight ? "is-error" : ""}`}>
+            25-300 kg
+          </p>
         </div>
       </div>
 
