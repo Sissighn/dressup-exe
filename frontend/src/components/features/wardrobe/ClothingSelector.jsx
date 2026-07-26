@@ -7,11 +7,15 @@ const ClothingSelector = ({
   onPrev,
   onNext,
   onSelect,
+  emptyMessage,
+  onEmptyAction,
 }) => {
+  const hasItems = Boolean(currentItem);
+
   return (
     <div className="clothing-section">
       <span className="section-label">{label}</span>
-      <button onClick={onPrev} className="nav-arrow left">
+      <button onClick={onPrev} className="nav-arrow left" disabled={!hasItems}>
         &lt;
       </button>
       {currentItem ? (
@@ -34,11 +38,14 @@ const ClothingSelector = ({
           </button>
         </div>
       ) : (
-        <p style={{ opacity: 0.4, fontSize: "10px" }}>
-          NO {label.toUpperCase()} IN CLOSET
-        </p>
+        <div className="clothing-empty-state">
+          <p>NO {label.toUpperCase()} IN CLOSET</p>
+          <button type="button" onClick={onEmptyAction}>
+            {emptyMessage || `ADD ${label}`}
+          </button>
+        </div>
       )}
-      <button onClick={onNext} className="nav-arrow right">
+      <button onClick={onNext} className="nav-arrow right" disabled={!hasItems}>
         &gt;
       </button>
     </div>
