@@ -36,8 +36,11 @@ const AuthFormCard = ({
       </div>
 
       <form onSubmit={onSubmit} className="auth-form">
-        <label className="auth-label">Email</label>
+        <label className="auth-label" htmlFor="auth-email">
+          Email
+        </label>
         <input
+          id="auth-email"
           className="auth-input"
           type="email"
           value={email}
@@ -46,8 +49,11 @@ const AuthFormCard = ({
           required
         />
 
-        <label className="auth-label">Password</label>
+        <label className="auth-label" htmlFor="auth-password">
+          Password
+        </label>
         <input
+          id="auth-password"
           className="auth-input"
           type="password"
           value={password}
