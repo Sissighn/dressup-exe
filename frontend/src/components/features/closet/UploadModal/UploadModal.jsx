@@ -37,8 +37,11 @@ const UploadModal = ({
         )}
 
         <div className={styles.field}>
-          <label className={styles.label}>CATEGORY</label>
+          <label className={styles.label} htmlFor="closet-upload-category">
+            CATEGORY
+          </label>
           <select
+            id="closet-upload-category"
             value={modalUploadCategory}
             onChange={(e) => setModalUploadCategory(e.target.value)}
             className={styles.select}
