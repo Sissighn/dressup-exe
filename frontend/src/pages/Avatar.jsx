@@ -53,10 +53,10 @@ const Avatar = () => {
     if (e.target.name === "name" && e.target.value.trim()) {
       setValidationErrors((prev) => ({ ...prev, name: false }));
     }
-    if (e.target.name === "height" && e.target.value) {
+    if (e.target.name === "height" && isNumberInRange(e.target.value, 80, 250)) {
       setValidationErrors((prev) => ({ ...prev, height: false }));
     }
-    if (e.target.name === "weight" && e.target.value) {
+    if (e.target.name === "weight" && isNumberInRange(e.target.value, 25, 300)) {
       setValidationErrors((prev) => ({ ...prev, weight: false }));
     }
   };
@@ -73,8 +73,8 @@ const Avatar = () => {
   const handleGenerate = async () => {
     const nextErrors = {
       name: !formData.name.trim(),
-      height: !formData.height,
-      weight: !formData.weight,
+      height: !isNumberInRange(formData.height, 80, 250),
+      weight: !isNumberInRange(formData.weight, 25, 300),
       face: !faceFile,
     };
 
@@ -83,7 +83,7 @@ const Avatar = () => {
 
     if (hasErrors) {
       setModalMessage(
-        "Please fill DISPLAY NAME, HEIGHT, WEIGHT and upload a FACE SCAN before generating.",
+        "Please add a display name, upload a face scan, set height between 80-250 cm, and weight between 25-300 kg.",
       );
       setShowValidationModal(true);
       return;
@@ -146,20 +146,12 @@ const Avatar = () => {
   };
 
   return (
-    <div
-      className="main-content"
-      style={{ display: "block", overflow: "auto", padding: "4rem" }}
-    >
-      <h1
-        className="hero-text"
-        style={{ fontSize: "3rem", marginBottom: "2rem" }}
-      >
+    <div className="avatar-page">
+      <h1 className="hero-text avatar-page-title">
         Initialise <br /> <i>Digital Twin.</i>
       </h1>
 
-      <div
-        style={{ display: "grid", gridTemplateColumns: "1fr 1fr", gap: "4rem" }}
-      >
+      <div className="avatar-setup-grid">
         <BiometricsForm
           formData={formData}
           onInputChange={handleInputChange}
@@ -206,6 +198,16 @@ const Avatar = () => {
         </div>
       )}
     </div>
+  );
+};
+
+const isNumberInRange = (value, min, max) => {
+  const numericValue = Number(value);
+  return (
+    value !== "" &&
+    Number.isFinite(numericValue) &&
+    numericValue >= min &&
+    numericValue <= max
   );
 };
 
