@@ -1,0 +1,81 @@
+{
+  "name": "dressup-exe-desktop",
+  "productName": "dressup.exe",
+  "version": "1.0.0",
+  "description": "dressup.exe as an installable macOS app",
+  "private": true,
+  "main": "src/main.js",
+  "author": "Sissighn",
+  "license": "MIT",
+  "scripts": {
+    "vendor:python": "bash scripts/vendor-python.sh",
+    "build:frontend": "npm --prefix ../frontend run build -- --mode desktop",
+    "icon": "bash scripts/make-icon.sh",
+    "prepare:resources": "npm run vendor:python && npm run build:frontend && npm run icon",
+    "start": "npm run prepare:resources && electron .",
+    "dist": "npm run prepare:resources && electron-builder --mac"
+  },
+  "devDependencies": {
+    "electron": "^40.0.0",
+    "electron-builder": "^26.0.12"
+  },
+  "build": {
+    "appId": "com.sissighn.dressupexe",
+    "productName": "dressup.exe",
+    "artifactName": "dressup.exe-${version}-${arch}.${ext}",
+    "directories": {
+      "output": "release",
+      "buildResources": "build"
+    },
+    "afterPack": "scripts/afterPack.js",
+    "files": [
+      "src/**/*",
+      "package.json"
+    ],
+    "extraResources": [
+      {
+        "from": "vendor/python",
+        "to": "python",
+        "filter": ["**/*"]
+      },
+      {
+        "from": "../backend",
+        "to": "backend",
+        "filter": [
+          "**/*",
+          "!venv/**",
+          "!uploads/**",
+          "!tests/**",
+          "!__pycache__/**",
+          "!**/__pycache__/**",
+          "!.env",
+          "!.coveragerc",
+          "!.dockerignore",
+          "!Dockerfile",
+          "!.DS_Store"
+        ]
+      },
+      {
+        "from": "../frontend/dist",
+        "to": "frontend-dist",
+        "filter": ["**/*"]
+      }
+    ],
+    "mac": {
+      "category": "public.app-category.lifestyle",
+      "target": [
+        {
+          "target": "dmg",
+          "arch": ["arm64"]
+        }
+      ],
+      "icon": "build/icon.icns",
+      "identity": null,
+      "hardenedRuntime": false,
+      "gatekeeperAssess": false
+    },
+    "dmg": {
+      "title": "dressup.exe"
+    }
+  }
+}
