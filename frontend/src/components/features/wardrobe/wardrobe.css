@@ -70,6 +70,44 @@
   background-color: #fff;
 }
 
+/* Umschalter zwischen Kombination (Top + Bottom) und einteiligem Kleid */
+.outfit-mode-switch {
+  display: flex;
+  flex-shrink: 0;
+  border-bottom: 1px solid var(--border-color);
+  background-color: #fff;
+}
+
+.outfit-mode-button {
+  flex: 1;
+  padding: 12px 8px;
+  font-family: var(--font-sans);
+  font-size: 10px;
+  font-weight: 700;
+  letter-spacing: 0.08em;
+  color: var(--text-main);
+  background: transparent;
+  border: none;
+  border-right: 1px solid var(--border-color);
+  cursor: pointer;
+  transition:
+    background-color 0.15s ease,
+    color 0.15s ease;
+}
+
+.outfit-mode-button:last-child {
+  border-right: none;
+}
+
+.outfit-mode-button:hover:not(.is-active) {
+  background-color: var(--accent-yellow);
+}
+
+.outfit-mode-button.is-active {
+  background-color: var(--soft-black);
+  color: #fff;
+}
+
 .clothing-section {
   flex: 1; /* Nimmt 50% der Höhe */
   border-bottom: 1px solid var(--border-color);
