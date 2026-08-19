@@ -80,13 +80,28 @@ async def generate_avatar(
 async def try_on_outfit(
     request: Request,
     avatar_image: UploadFile = File(...),
-    top_image: UploadFile = File(...),
-    bottom_image: UploadFile = File(...),
+    top_image: UploadFile = File(None),
+    bottom_image: UploadFile = File(None),
+    dress_image: UploadFile = File(None),
     actor=Depends(get_current_actor),
 ):
     enforce_rate_limit(
         request, key="ai:try-on-outfit", limit=12, window_seconds=60 * 60
     )
+
+    # Entweder ein einteiliges Kleid oder die Kombination aus Oberteil und
+    # Unterteil - beides gleichzeitig ergibt keinen Look.
+    has_combo = top_image is not None and bottom_image is not None
+    if dress_image is not None and (top_image is not None or bottom_image is not None):
+        raise HTTPException(
+            status_code=400,
+            detail="Send either a dress or a top/bottom combination, not both.",
+        )
+    if dress_image is None and not has_combo:
+        raise HTTPException(
+            status_code=400,
+            detail="Send either a dress image or both a top and a bottom image.",
+        )
 
     try:
         upload_id = uuid.uuid4().hex
@@ -94,16 +109,32 @@ async def try_on_outfit(
             avatar_image,
             os.path.join(UPLOAD_DIR, f"temp_av_{actor['owner_key']}_{upload_id}.png"),
         )
-        tp_p = await save_validated_upload(
-            top_image,
-            os.path.join(UPLOAD_DIR, f"temp_tp_{actor['owner_key']}_{upload_id}.png"),
-        )
-        bt_p = await save_validated_upload(
-            bottom_image,
-            os.path.join(UPLOAD_DIR, f"temp_bt_{actor['owner_key']}_{upload_id}.png"),
-        )
 
-        result = await services.try_gemini_outfit_generation(av_p, tp_p, bt_p)
+        if dress_image is not None:
+            dr_p = await save_validated_upload(
+                dress_image,
+                os.path.join(
+                    UPLOAD_DIR, f"temp_dr_{actor['owner_key']}_{upload_id}.png"
+                ),
+            )
+            result = await services.try_gemini_outfit_generation(
+                av_p, dress_path=dr_p
+            )
+        else:
+            tp_p = await save_validated_upload(
+                top_image,
+                os.path.join(
+                    UPLOAD_DIR, f"temp_tp_{actor['owner_key']}_{upload_id}.png"
+                ),
+            )
+            bt_p = await save_validated_upload(
+                bottom_image,
+                os.path.join(
+                    UPLOAD_DIR, f"temp_bt_{actor['owner_key']}_{upload_id}.png"
+                ),
+            )
+            result = await services.try_gemini_outfit_generation(av_p, tp_p, bt_p)
+
         if result["success"]:
             return result
         raise HTTPException(status_code=422, detail=result.get("error"))
