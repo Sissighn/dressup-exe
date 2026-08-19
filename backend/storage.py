@@ -51,6 +51,7 @@ def is_actor_owned_upload(filename: str, actor: dict) -> bool:
         f"temp_av_{owner_key}_",
         f"temp_tp_{owner_key}_",
         f"temp_bt_{owner_key}_",
+        f"temp_dr_{owner_key}_",
         f"outfit_result_temp_av_{owner_key}_",
         f"styling_board_{owner_key}_",
         f"archived_look_{owner_key}_",
