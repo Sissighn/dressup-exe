@@ -143,3 +143,64 @@ def test_try_on_outfit_returns_mocked_ai_result(client, monkeypatch):
 
     assert response.status_code == 200
     assert response.json()["outfit_url"].endswith("_mock.png")
+
+
+def test_try_on_dress_returns_mocked_ai_result(client, monkeypatch):
+    received = {}
+
+    async def fake_outfit_generation(
+        avatar_path, top_path=None, bottom_path=None, dress_path=None
+    ):
+        received["dress_path"] = dress_path
+        received["top_path"] = top_path
+        received["bottom_path"] = bottom_path
+        owner_key = current_owner_key(client)
+        outfit_filename = f"outfit_result_temp_av_{owner_key}_mock.png"
+        with open(os.path.join(TEST_UPLOAD_DIR, outfit_filename), "wb") as image_file:
+            image_file.write(make_png_bytes())
+        return {
+            "success": True,
+            "outfit_url": f"http://testserver/uploads/{outfit_filename}",
+        }
+
+    import services
+
+    register_user(client)
+    monkeypatch.setattr(services, "try_gemini_outfit_generation", fake_outfit_generation)
+
+    response = client.post(
+        "/try-on-outfit",
+        files={
+            "avatar_image": ("avatar.png", make_png_bytes(), "image/png"),
+            "dress_image": ("dress.png", make_png_bytes(), "image/png"),
+        },
+    )
+
+    assert response.status_code == 200
+    assert response.json()["outfit_url"].endswith("_mock.png")
+    assert received["dress_path"] is not None
+    assert received["top_path"] is None
+    assert received["bottom_path"] is None
+
+
+def test_try_on_rejects_incomplete_and_conflicting_selections(client):
+    register_user(client)
+
+    only_top = client.post(
+        "/try-on-outfit",
+        files={
+            "avatar_image": ("avatar.png", make_png_bytes(), "image/png"),
+            "top_image": ("top.png", make_png_bytes(), "image/png"),
+        },
+    )
+    assert only_top.status_code == 400
+
+    dress_and_top = client.post(
+        "/try-on-outfit",
+        files={
+            "avatar_image": ("avatar.png", make_png_bytes(), "image/png"),
+            "dress_image": ("dress.png", make_png_bytes(), "image/png"),
+            "top_image": ("top.png", make_png_bytes(), "image/png"),
+        },
+    )
+    assert dress_and_top.status_code == 400
