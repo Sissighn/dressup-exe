@@ -3,7 +3,7 @@ import os
 from io import BytesIO
 from PIL import Image, ImageEnhance, ImageFilter, ImageOps
 import base64
-from settings import build_upload_url
+from settings import UPLOAD_DIR, build_upload_url
 
 try:
     from rembg import remove as rembg_remove
@@ -13,10 +13,8 @@ except ImportError as exc:
     rembg_remove = None
     rembg_import_error = str(exc)
 
-# WICHTIG: Absoluter Pfad verwenden!
-BASE_DIR = os.path.dirname(os.path.abspath(__file__))
-UPLOAD_DIR = os.path.join(BASE_DIR, "uploads")
-os.makedirs(UPLOAD_DIR, exist_ok=True)
+# UPLOAD_DIR kommt aus settings.py, damit Desktop-Builds den Ordner
+# auf einen beschreibbaren Pfad ausserhalb des App-Bundles umbiegen koennen.
 
 TARGET_WIDTH = 1080
 TARGET_HEIGHT = 1920
@@ -109,6 +107,214 @@ def create_avatar_reference(face_path, face_scale=0.32):
         return canvas
 
 
+# Basiskleidung des generierten Avatars. Einzige Quelle fuer Avatar- UND
+# Try-on-Prompts: die Try-on-Prompts muessen exakt die Kleidung benennen, die
+# sie entfernen sollen. Frueher standen beide Beschreibungen unabhaengig im
+# Code und liefen auseinander (Avatar trug Shorts, Try-on entfernte Leggings).
+BASE_AVATAR_TOP = "white fitted tank top"
+BASE_AVATAR_BOTTOM = "close-fitting black studio shorts"
+
+# Try-on-Modi: Oberteil + Hose/Rock kombinieren oder ein einteiliges Kleid.
+OUTFIT_MODE_COMBO = "combo"
+OUTFIT_MODE_DRESS = "dress"
+
+
+def describe_base_avatar_outfit():
+    return f"a {BASE_AVATAR_TOP} and {BASE_AVATAR_BOTTOM}"
+
+
+def build_avatar_clothing_instruction(subject_gender):
+    """Beschreibt den Basis-Look des Avatars.
+
+    Die Shorts muessen explizit beschrieben werden: bei einer vagen Angabe wie
+    "simple neutral studio shorts" generiert das Modell boxershorts-artige
+    Unisex-Shorts in Hautton. Beine bleiben frei, damit die Try-on-Prompts
+    Roecke und kurze Hosen ohne durchscheinende Basiskleidung rendern koennen.
+    """
+    # Artikel gehoert zur Variante, sonst entsteht "in a athletic ... cut".
+    if subject_gender == "female":
+        cut = "a high-waisted women's"
+    elif subject_gender == "male":
+        cut = "an athletic men's"
+    else:
+        cut = "a streamlined unisex"
+
+    return (
+        f"- Clothing: High-quality {BASE_AVATAR_TOP} and {BASE_AVATAR_BOTTOM} "
+        f"in {cut} cut, ending at the upper thigh, with bare legs visible. "
+        f"The shorts must read as deliberate studio wardrobe, never as loose boxer shorts or underwear, "
+        f"and must clearly contrast with the skin tone. "
+    )
+
+
+def build_base_outfit_removal_clause(image_label="IMAGE 1"):
+    """Anweisung, die Basiskleidung restlos zu ersetzen."""
+    return (
+        f"The person in {image_label} wears {describe_base_avatar_outfit()} as placeholder studio wardrobe. "
+        f"This is NOT part of the look: remove it completely. It must never show through, "
+        f"layer underneath, or extend beyond the selected garments. "
+    )
+
+
+def build_leg_coverage_clause(mode=OUTFIT_MODE_COMBO):
+    """Verhindert erfundene Unterschichten unter beinfreier Kleidung.
+
+    Bewusst farbneutral formuliert: die Regel gilt fuer jede erfundene
+    Unterschicht, nicht nur fuer die grauen Leggings einer frueheren
+    Avatar-Version.
+    """
+    if mode == OUTFIT_MODE_DRESS:
+        return (
+            "If the dress hem exposes the legs, render natural bare legs below the hem, unless the dress reference "
+            "itself clearly shows attached tights, leggings, or stockings. "
+            "Never invent leggings, tights, stockings, base shorts, trousers, or any underlayer that is not visible "
+            "in the dress reference. "
+        )
+
+    return (
+        "If the bottom reference exposes the legs (skirt, mini skirt, shorts, culottes), render natural bare legs "
+        "below the hem, unless the bottom reference itself clearly shows tights, leggings, stockings, or trousers. "
+        "Never invent leggings, tights, stockings, base shorts, or any underlayer that is not visible in the bottom reference. "
+    )
+
+
+def build_garment_reference_clause(mode):
+    """Benennt, welche Referenzbilder welches Kleidungsstueck liefern."""
+    if mode == OUTFIT_MODE_DRESS:
+        return (
+            "Use IMAGE 2 as the only garment reference. It is a ONE-PIECE DRESS and must be worn as the complete outfit: "
+            "no separate top, no shirt, no trousers, and no skirt layered under or over it. "
+            "Recreate its visible silhouette, color, pattern, texture, neckline, sleeve length, waistline, hem length, and fit. "
+        )
+
+    return (
+        "Use IMAGE 2 as the only top reference and IMAGE 3 as the only bottom reference. "
+        "Recreate their visible garment category, silhouette, color, texture, length, and fit. "
+    )
+
+
+def build_garment_length_clause(mode):
+    """Sorgt dafuer, dass lange Schnitte samt Saum korrekt dargestellt werden."""
+    if mode == OUTFIT_MODE_DRESS:
+        return (
+            "If the dress is a maxi, midi, or floor-length design, render the full hem and the resulting "
+            "legs/feet composition faithfully instead of shortening it. "
+        )
+
+    return (
+        "If IMAGE 3 is a long skirt, maxi skirt, dress-like bottom, trousers, jeans, or leggings, render that garment "
+        "faithfully and show the full hem/legs/feet composition according to the garment. "
+    )
+
+
+# Ein einzelnes Adjektiv wie "CURVY" steuert Bildmodelle kaum - sie fallen auf
+# ihren Standard-Modelkoerper zurueck (gerade, rechteckige Silhouette). Deshalb
+# wird jeder Koerpertyp ueber konkrete Schulter-Taille-Huefte-Verhaeltnisse
+# beschrieben, die das Modell tatsaechlich umsetzen kann.
+BODY_TYPE_PROFILES = {
+    "slim": {
+        "silhouette": (
+            "narrow shoulders, a narrow ribcage, and narrow hips of nearly the same width, "
+            "slender arms and legs, visible collarbones, and a long lean vertical line with "
+            "only subtle waist definition"
+        ),
+        "female": "a small bust and a flat stomach",
+        "male": "a lean flat chest and a slim waist",
+    },
+    "athletic": {
+        # Eine breite, kantige V-Taper-Schulterpartie ist eine maennliche
+        # Morphologie. Fuer weibliche Avatare wird "athletic" deshalb ueber
+        # Definition und Straffheit beschrieben, nicht ueber Schulterbreite.
+        "silhouette": (
+            "toned, athletic proportions with visible muscle definition in the arms and legs, "
+            "a firm flat midsection, and a clearly defined waist"
+        ),
+        "silhouette_female": (
+            "an athletic yet distinctly feminine build: softly sculpted shoulders that stay in "
+            "balance with the hips and are never broader or squared-off, lean visible muscle tone "
+            "in the arms and legs, a firm flat midsection with a clearly defined narrow waist, and "
+            "gently curved, toned hips, glutes, and thighs - the figure of a female dancer or "
+            "fitness model, not of a male athlete"
+        ),
+        "silhouette_male": (
+            "broad, squared-off shoulders that are clearly wider than the hips, visible muscle "
+            "definition in the shoulders, arms, and thighs, a firm flat midsection, and a "
+            "distinct V-taper from shoulders down to a narrow waist"
+        ),
+        "female": (
+            "a natural feminine bust, a soft feminine jawline and neck, and strong but slender "
+            "thighs and calves. Keep the muscles lean and elegant, never bulky. Absolutely avoid a "
+            "masculine silhouette: no broad squared shoulder line, no V-taper physique, no "
+            "bodybuilder mass, no flat boxy hips"
+        ),
+        "male": "a broad muscular chest and defined abdominals",
+    },
+    "curvy": {
+        "silhouette": (
+            "wide, rounded hips that clearly match or exceed the shoulder width, a noticeably "
+            "narrow and sharply indented waist, and full soft thighs - an unmistakable hourglass "
+            "line where the waist is dramatically narrower than both bust and hips"
+        ),
+        "female": "a full rounded bust",
+        "male": "a solid, rounded chest and a fuller midsection",
+    },
+    "rectangular": {
+        "silhouette": (
+            "shoulders, waist, and hips of almost identical width, very little waist indentation, "
+            "and a straight up-and-down column silhouette with a flat stomach and straight hip line"
+        ),
+        "female": "a modest bust and an undefined waistline",
+        "male": "an even, straight torso without taper",
+    },
+}
+
+
+def normalize_body_type(body_type):
+    value = (body_type or "").strip().lower()
+    aliases = {
+        "hourglass": "curvy",
+        "kurvig": "curvy",
+        "sportlich": "athletic",
+        "muscular": "athletic",
+        "schlank": "slim",
+        "slender": "slim",
+        "rechteckig": "rectangular",
+        "straight": "rectangular",
+    }
+    value = aliases.get(value, value)
+    return value if value in BODY_TYPE_PROFILES else ""
+
+
+def build_body_type_instruction(body_type, subject_gender):
+    """Uebersetzt den ausgewaehlten Koerpertyp in konkrete Proportionen."""
+    normalized = normalize_body_type(body_type)
+    if not normalized:
+        # Unbekannter Wert: lieber die Rohangabe durchreichen als sie zu verlieren.
+        raw = (body_type or "average").strip().lower()
+        return f"- Body shape: a {raw} body type. "
+
+    profile = BODY_TYPE_PROFILES[normalized]
+    # Manche Koerpertypen brauchen eine eigene Silhouette pro Geschlecht -
+    # "athletic" beschreibt bei Frauen und Maennern unterschiedliche Formen.
+    silhouette = profile.get(f"silhouette_{subject_gender}", profile["silhouette"])
+    detail = profile.get(subject_gender, "")
+    detail_clause = f" The figure also has {detail}. " if detail else " "
+
+    femininity_guard = (
+        "The overall silhouette must read as unmistakably female. "
+        if subject_gender == "female"
+        else ""
+    )
+
+    return (
+        f"- Body shape ({normalized.upper()}) - this is a defining requirement, not a suggestion: "
+        f"the figure has {silhouette}.{detail_clause}{femininity_guard}"
+        f"The {normalized.upper()} silhouette must be immediately recognizable in the final image and "
+        f"clearly distinguishable from the other body types. Do not default to a generic straight "
+        f"fashion-model physique. "
+    )
+
+
 def build_avatar_prompt(height, weight, body_type, gender, attempt):
     subject_gender = normalize_gender(gender)
     makeup_instruction = ""
@@ -123,15 +329,23 @@ def build_avatar_prompt(height, weight, body_type, gender, attempt):
         f"STRICT FORMAT RULE: Generate a vertical 9:16 portrait image (1080x1920 pixels). "
         f"IMPORTANT: The ENTIRE body from HEAD to FEET must be VISIBLE in the 9:16 portrait format."
         f"The output MUST be a tall portrait, regardless of the input image shape. "
-        f"\nCONTENT: A stunning, highly photorealistic full-body portrait of a {gender} with a {body_type} body type, featuring this exact face. "
+        f"\nCONTENT: A stunning, highly photorealistic full-body portrait of a {gender}, featuring this exact face. "
         f"- Visible head to toe. "
         f"- Height: {height}cm, Weight: {weight}kg. "
-        f"- Clothing: High-quality white fitted tank top and simple neutral studio shorts, with bare lower legs visible. "
+        f"{build_body_type_instruction(body_type, subject_gender)}"
+        f"If the height and weight numbers seem to conflict with the described body shape, "
+        f"prioritize the body shape and keep the proportions above. "
+        f"{build_avatar_clothing_instruction(subject_gender)}"
         f"- Pose: Standing upright, confident natural pose, facing camera. "
+        f"- Facial expression: quietly self-assured with a subtle closed-lip smile - the corners of the mouth "
+        f"lifted just slightly, cheeks softly engaged, eyes looking directly into the camera with a calm, "
+        f"confident gaze. Not a blank neutral stare, not a wide open-mouth grin, not a smirk. "
         f"- Lighting: Soft cinematic studio lighting to enhance facial features naturally. "
         f"- Background: Solid neutral grey studio background."
         f"IMPORTANT: The person must be clearly {gender}. Maintain the exact facial identity from the image."
-        f" Preserve skin texture, eyebrows, eyes, nose, lips, and overall face proportions as closely as possible."
+        f" Preserve skin texture, eyebrows, eyes, nose, lip shape, and overall face proportions as closely as possible."
+        f" The expression may differ from the reference photo - adjust only the mouth and eyes to achieve the "
+        f"confident subtle smile, while every identity-defining feature stays unchanged."
         f"{makeup_instruction}"
     )
 
@@ -289,6 +503,8 @@ async def try_gemini_generation(
 
             correction_prompt = (
                 "Image editing task. Keep the same person identity and outfit exactly, but change framing only. "
+                "Preserve the existing body proportions, silhouette, and facial expression unchanged - "
+                "do not slim, reshape, or normalize the figure while reframing. "
                 "Generate an exact 1080x1920 vertical image where the full body is visible from head to both feet. "
                 "Do not crop the feet, ankles, legs, hands, or head. "
                 "Zoom the camera out and keep empty space above head and below feet. "
@@ -324,16 +540,16 @@ async def try_gemini_generation(
         return {"success": False, "error": str(e)}
 
 
-def build_outfit_try_on_prompt():
+def build_outfit_try_on_prompt(mode=OUTFIT_MODE_COMBO):
     return (
         "FASHION TRY-ON TASK: Create a premium photorealistic fashion catalog render in a vertical 9:16 frame, exactly 1080x1920. "
         "Output ONE PERSON ONLY. No split-screen, no before/after, no collage, no duplicate body, no mirror copy. "
         "Use IMAGE 1 only for the person's identity, face, hair, body proportions, stance, and camera-facing pose. "
-        "Do NOT preserve, copy, or continue any clothing from IMAGE 1. The tank top, grey leggings, shoes, or any base outfit from IMAGE 1 must be fully replaced. "
-        "Use IMAGE 2 as the only top reference and IMAGE 3 as the only bottom reference. Recreate their visible garment category, silhouette, color, texture, length, and fit. "
-        "If IMAGE 3 is a skirt, mini skirt, shorts, culottes, or any garment that exposes the legs, show natural bare legs below it unless IMAGE 3 itself clearly contains tights, leggings, stockings, or pants. "
-        "Never invent grey leggings, grey tights, underlayers, or long pants under a skirt or shorts. Remove all grey leggings from the base avatar. "
-        "If IMAGE 3 is a long skirt, maxi skirt, dress-like bottom, trousers, jeans, or leggings, render that garment faithfully and show the full hem/legs/feet composition according to the garment. "
+        "Do NOT preserve, copy, or continue any clothing or footwear from IMAGE 1. "
+        f"{build_base_outfit_removal_clause()}"
+        f"{build_garment_reference_clause(mode)}"
+        f"{build_leg_coverage_clause(mode)}"
+        f"{build_garment_length_clause(mode)}"
         "STRICT FRAMING: full body must be visible from the top of the head to the bottom of both feet, including shoes/feet fully inside the image. "
         "Do not crop feet, ankles, shoes, legs, hands, hair, or head. Leave clear empty studio space above the head and below the feet. "
         "Keep the camera zoomed out like a full-length fashion e-commerce photo, not a knee-up portrait. "
@@ -342,54 +558,89 @@ def build_outfit_try_on_prompt():
     )
 
 
-def build_outfit_fallback_prompt():
+def build_outfit_fallback_prompt(mode=OUTFIT_MODE_COMBO):
+    if mode == OUTFIT_MODE_DRESS:
+        dressing_instruction = (
+            "Dress the person in the one-piece dress from the second image, worn as the complete outfit. "
+        )
+    else:
+        dressing_instruction = (
+            "Dress the person in the top from the second image and the bottom garment from the third image. "
+        )
+
     return (
         "Create a photorealistic full-body fashion try-on portrait, vertical 9:16, one person only. "
         "Use the first image for the person's face, hair, body proportions, and standing pose. "
-        "Dress the person in the top from the second image and the bottom garment from the third image. "
-        "The clothing from the first image is only a starting outfit and should be replaced by the selected garments. "
-        "If the third image is a skirt or shorts, show bare natural legs unless the third image clearly includes tights or leggings. "
-        "Do not add grey leggings under skirts or shorts. "
+        f"{dressing_instruction}"
+        f"{build_base_outfit_removal_clause('the first image')}"
+        f"{build_leg_coverage_clause(mode)}"
         "Show the complete body from head to both feet, including shoes/feet fully visible, on a neutral grey studio background."
     )
 
 
-def build_outfit_identity_correction_prompt():
+def build_outfit_identity_correction_prompt(mode=OUTFIT_MODE_COMBO):
+    reference_images = (
+        "IMAGE 2 as the only clothing reference"
+        if mode == OUTFIT_MODE_DRESS
+        else "IMAGE 2 and IMAGE 3 as the only clothing references"
+    )
+
     return (
         "Image editing task. Keep only ONE person in frame and remove any duplicate, split-screen, mirror, collage, or before/after layout. "
         "Preserve the main subject identity, face, hair, body proportions, and pose from IMAGE 1. "
-        "Use IMAGE 2 and IMAGE 3 as the only clothing references. Do not preserve any clothing from IMAGE 1. "
-        "Fully remove the base avatar's grey leggings, tank top, and original outfit unless the matching garment is explicitly visible in IMAGE 2 or IMAGE 3. "
-        "If the bottom garment is a skirt or shorts, show natural bare legs below it unless IMAGE 3 clearly shows tights or leggings. "
+        f"Use {reference_images}. Do not preserve any clothing from IMAGE 1. "
+        f"{build_base_outfit_removal_clause()}"
+        f"{build_leg_coverage_clause(mode)}"
         "Return a premium single-person full-body 1080x1920 fashion catalog portrait on a clean neutral grey background. "
         "Head, hair, hands, legs, ankles, shoes, and both feet must be fully visible."
     )
 
 
-def build_outfit_framing_correction_prompt():
+def build_outfit_framing_correction_prompt(mode=OUTFIT_MODE_COMBO):
+    reference_image = (
+        "dress reference image" if mode == OUTFIT_MODE_DRESS else "bottom reference image"
+    )
+
     return (
         "Image editing task. Change framing only and keep the same person identity and selected outfit. "
         "Zoom out to a full-length fashion catalog portrait so the entire body is visible from top of head to bottom of both feet. "
         "Both shoes/feet must be completely inside the frame with visible floor space below them. "
         "Do not crop head, hair, hands, legs, ankles, shoes, or feet. "
         "Do not add borders, white bars, side margins, or letterboxing. Keep a clean neutral grey studio background. "
-        "Do not reintroduce grey leggings or tights under skirts/shorts unless they are clearly present in the bottom reference image."
+        "Do not reintroduce the base avatar's placeholder wardrobe, leggings, tights, or underlayers "
+        f"unless they are clearly present in the {reference_image}."
     )
 
 
-async def try_gemini_outfit_generation(avatar_path, top_path, bottom_path):
+async def try_gemini_outfit_generation(
+    avatar_path, top_path=None, bottom_path=None, dress_path=None
+):
+    """Generiert einen Try-on-Look.
+
+    Entweder aus top_path + bottom_path (Kombination) oder aus dress_path
+    (einteiliges Kleid). Die Garment-Bilder werden in derselben Reihenfolge an
+    das Modell gereicht, in der die Prompts sie als IMAGE 2 / IMAGE 3 ansprechen.
+    """
     try:
         from google import genai
         from google.genai import types
 
         client = genai.Client(api_key=os.getenv("GOOGLE_API_KEY"))
 
+        mode = OUTFIT_MODE_DRESS if dress_path else OUTFIT_MODE_COMBO
+        garment_paths = (
+            [dress_path] if mode == OUTFIT_MODE_DRESS else [top_path, bottom_path]
+        )
+
         with Image.open(avatar_path) as avatar_source:
             avatar_img = ImageOps.exif_transpose(avatar_source).convert("RGB")
-        with Image.open(top_path) as top_source:
-            top_img = ImageOps.exif_transpose(top_source).convert("RGBA")
-        with Image.open(bottom_path) as bottom_source:
-            bottom_img = ImageOps.exif_transpose(bottom_source).convert("RGBA")
+
+        garment_imgs = []
+        for garment_path in garment_paths:
+            with Image.open(garment_path) as garment_source:
+                garment_imgs.append(
+                    ImageOps.exif_transpose(garment_source).convert("RGBA")
+                )
 
         outfit_filename = os.path.join(
             UPLOAD_DIR, f"outfit_result_{os.path.basename(avatar_path)}"
@@ -398,12 +649,15 @@ async def try_gemini_outfit_generation(avatar_path, top_path, bottom_path):
         image_saved = False
         last_response_debug = "No generation response."
         for prompt_attempt, prompt in enumerate(
-            [build_outfit_try_on_prompt(), build_outfit_fallback_prompt()],
+            [
+                build_outfit_try_on_prompt(mode),
+                build_outfit_fallback_prompt(mode),
+            ],
             start=1,
         ):
             response = client.models.generate_content(
                 model="gemini-2.5-flash-image",
-                contents=[prompt, avatar_img, top_img, bottom_img],
+                contents=[prompt, avatar_img, *garment_imgs],
                 config=types.GenerateContentConfig(
                     safety_settings=[
                         types.SafetySetting(
@@ -456,7 +710,7 @@ async def try_gemini_outfit_generation(avatar_path, top_path, bottom_path):
             )
 
             if not is_single_subject:
-                correction_prompt = build_outfit_identity_correction_prompt()
+                correction_prompt = build_outfit_identity_correction_prompt(mode)
 
                 with Image.open(outfit_filename) as generated_outfit:
                     fixed_response = client.models.generate_content(
@@ -465,8 +719,7 @@ async def try_gemini_outfit_generation(avatar_path, top_path, bottom_path):
                             correction_prompt,
                             generated_outfit.copy(),
                             avatar_img,
-                            top_img,
-                            bottom_img,
+                            *garment_imgs,
                         ],
                     )
 
@@ -474,7 +727,7 @@ async def try_gemini_outfit_generation(avatar_path, top_path, bottom_path):
                 if fixed_saved:
                     resize_to_target(outfit_filename, 1080, 1920)
 
-            framing_correction_prompt = build_outfit_framing_correction_prompt()
+            framing_correction_prompt = build_outfit_framing_correction_prompt(mode)
             for attempt in range(1, MAX_OUTFIT_FRAMING_ATTEMPTS + 1):
                 if await is_full_body_avatar(client, outfit_filename):
                     break
@@ -490,8 +743,7 @@ async def try_gemini_outfit_generation(avatar_path, top_path, bottom_path):
                             framing_correction_prompt,
                             generated_outfit.copy(),
                             avatar_img,
-                            top_img,
-                            bottom_img,
+                            *garment_imgs,
                         ],
                     )
 
