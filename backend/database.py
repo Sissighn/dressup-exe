@@ -4,11 +4,14 @@ import os
 
 BASE_DIR = os.path.dirname(os.path.abspath(__file__))
 DB_FOLDER = os.path.join(BASE_DIR, "../database")
-os.makedirs(DB_FOLDER, exist_ok=True)
 
-SQLALCHEMY_DATABASE_URL = os.getenv(
-    "DATABASE_URL", f"sqlite:///{os.path.join(DB_FOLDER, 'closet.db')}"
-)
+# Ohne DATABASE_URL liegt die SQLite-Datei im Projektordner. Desktop-Builds
+# setzen DATABASE_URL auf einen beschreibbaren Pfad, damit im App-Bundle
+# kein Ordner angelegt werden muss.
+SQLALCHEMY_DATABASE_URL = os.getenv("DATABASE_URL", "")
+if not SQLALCHEMY_DATABASE_URL:
+    os.makedirs(DB_FOLDER, exist_ok=True)
+    SQLALCHEMY_DATABASE_URL = f"sqlite:///{os.path.join(DB_FOLDER, 'closet.db')}"
 
 connect_args = (
     {"check_same_thread": False}
