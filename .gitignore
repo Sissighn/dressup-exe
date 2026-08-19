@@ -1,14 +1,32 @@
+# Python
 __pycache__/
-node_modules/
-.env
-.DS_Store
+.pytest_cache/
+.coverage
 venv/
+.venv/
+
+# Node
+node_modules/
+
+# Secrets and local configuration
+.env
+
+# Local user data (never committed)
 backend/uploads/
 closet.db
+Clothes/
+
+# Test artefacts
 coverage/
 test-results/
 playwright-report/
-.coverage
-.pytest_cache/
+
+# macOS
+.DS_Store
 Icon*
-Clothes
+
+# macOS desktop build artefacts
+desktop/vendor/
+desktop/release/
+desktop/build/icon.icns
+desktop/build/icon.png
