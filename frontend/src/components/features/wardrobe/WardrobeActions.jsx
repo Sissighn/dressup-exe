@@ -33,6 +33,8 @@ const iconProps = {
 const WardrobeActions = ({
   isGenerating,
   dressedAvatar,
+  isDressMode,
+  isOutfitReady,
   selectedTop,
   selectedBottom,
   hasAvatar,
@@ -42,6 +44,16 @@ const WardrobeActions = ({
   onReset,
   onRescan,
 }) => {
+  const isTryOnDisabled = !hasAvatar || !isOutfitReady || isGenerating;
+
+  const missingSelectionHint = isDressMode
+    ? "Select one dress from your closet."
+    : !selectedTop && !selectedBottom
+      ? "Select a top and a bottom item."
+      : !selectedTop
+        ? "Select one top item."
+        : "Select one bottom item.";
+
   const baseButtonStyle = {
     width: "100%",
     minHeight: "44px",
@@ -77,13 +89,10 @@ const WardrobeActions = ({
         <button
           className="action-button wardrobe-action-button"
           onClick={onTryOn}
-          disabled={!hasAvatar || !selectedTop || !selectedBottom || isGenerating}
+          disabled={isTryOnDisabled}
           style={{
             ...baseButtonStyle,
-            background:
-              !hasAvatar || !selectedTop || !selectedBottom || isGenerating
-                ? "#ccc"
-                : "black",
+            background: isTryOnDisabled ? "#ccc" : "black",
             color: "white",
             cursor: isGenerating ? "not-allowed" : "pointer",
           }}
@@ -104,6 +113,17 @@ const WardrobeActions = ({
               }
             >
               AI GENERATING...
+            </ActionLabel>
+          ) : isDressMode ? (
+            <ActionLabel
+              icon={
+                <svg {...iconProps}>
+                  <path d="M10 3h4l-1 3 4 5-2 2v8H9v-8l-2-2 4-5-1-3Z" />
+                  <path d="M10 6h4" />
+                </svg>
+              }
+            >
+              TRY THE DRESS ON
             </ActionLabel>
           ) : (
             <ActionLabel
@@ -126,16 +146,10 @@ const WardrobeActions = ({
           </div>
         )}
 
-        {hasAvatar && (!selectedTop || !selectedBottom) && (
+        {hasAvatar && !isOutfitReady && (
           <div className="wardrobe-next-step">
             <strong>Complete outfit</strong>
-            <span>
-              {!selectedTop && !selectedBottom
-                ? "Select a top and a bottom item."
-                : !selectedTop
-                  ? "Select one top item."
-                  : "Select one bottom item."}
-            </span>
+            <span>{missingSelectionHint}</span>
           </div>
         )}
 

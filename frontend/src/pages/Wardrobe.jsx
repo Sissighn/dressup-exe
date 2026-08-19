@@ -21,16 +21,25 @@ const Wardrobe = () => {
   // State für Kleidungsauswahl aus der Datenbank
   const [tops, setTops] = useState([]);
   const [bottoms, setBottoms] = useState([]);
+  const [dresses, setDresses] = useState([]);
   const [currentTopIndex, setCurrentTopIndex] = useState(0);
   const [currentBottomIndex, setCurrentBottomIndex] = useState(0);
+  const [currentDressIndex, setCurrentDressIndex] = useState(0);
 
   // --- PERSISTENZ-LOGIK: Initialisierung aus localStorage ---
+  const [outfitMode, setOutfitMode] = useState(
+    () => getScopedItem("outfitMode", getAuthSession()) || "combo",
+  );
   const [selectedTop, setSelectedTop] = useState(() => {
     const saved = getScopedItem("selectedTop", getAuthSession());
     return saved ? JSON.parse(saved) : null;
   });
   const [selectedBottom, setSelectedBottom] = useState(() => {
     const saved = getScopedItem("selectedBottom", getAuthSession());
+    return saved ? JSON.parse(saved) : null;
+  });
+  const [selectedDress, setSelectedDress] = useState(() => {
+    const saved = getScopedItem("selectedDress", getAuthSession());
     return saved ? JSON.parse(saved) : null;
   });
   const [dressedAvatar, setDressedAvatar] = useState(() => {
@@ -50,6 +59,7 @@ const Wardrobe = () => {
   // --- SYNC: Änderungen im localStorage speichern ---
   useEffect(() => {
     const session = getAuthSession();
+    setScopedItem("outfitMode", outfitMode, session);
     if (selectedTop) {
       setScopedItem("selectedTop", JSON.stringify(selectedTop), session);
     } else {
@@ -60,12 +70,17 @@ const Wardrobe = () => {
     } else {
       removeScopedItem("selectedBottom", session);
     }
+    if (selectedDress) {
+      setScopedItem("selectedDress", JSON.stringify(selectedDress), session);
+    } else {
+      removeScopedItem("selectedDress", session);
+    }
     if (dressedAvatar) {
       setScopedItem("dressedAvatar", dressedAvatar, session);
     } else {
       removeScopedItem("dressedAvatar", session);
     }
-  }, [selectedTop, selectedBottom, dressedAvatar]);
+  }, [outfitMode, selectedTop, selectedBottom, selectedDress, dressedAvatar]);
 
   // Avatar und Kleidung beim Laden initialisieren
   useEffect(() => {
@@ -84,6 +99,7 @@ const Wardrobe = () => {
         const allItems = await res.json();
         setTops(allItems.filter((item) => item.category === "TOPS"));
         setBottoms(allItems.filter((item) => item.category === "BOTTOMS"));
+        setDresses(allItems.filter((item) => item.category === "DRESSES"));
       } catch (e) {
         console.error("Failed to load closet items", e);
       }
@@ -128,9 +144,28 @@ const Wardrobe = () => {
   const prevBottom = () =>
     bottoms.length &&
     setCurrentBottomIndex((p) => (p === 0 ? bottoms.length - 1 : p - 1));
+  const nextDress = () =>
+    dresses.length && setCurrentDressIndex((p) => (p + 1) % dresses.length);
+  const prevDress = () =>
+    dresses.length &&
+    setCurrentDressIndex((p) => (p === 0 ? dresses.length - 1 : p - 1));
 
   const currentTop = tops[currentTopIndex];
   const currentBottom = bottoms[currentBottomIndex];
+  const currentDress = dresses[currentDressIndex];
+
+  const isDressMode = outfitMode === "dress";
+  const isOutfitReady = isDressMode
+    ? Boolean(selectedDress)
+    : Boolean(selectedTop && selectedBottom);
+
+  // Beim Moduswechsel bleibt die Auswahl des anderen Modus erhalten, aber ein
+  // bereits generierter Look passt nicht mehr zur sichtbaren Auswahl.
+  const handleModeChange = (nextMode) => {
+    if (nextMode === outfitMode) return;
+    setOutfitMode(nextMode);
+    setDressedAvatar(null);
+  };
 
   // --- DIE TRY-ON LOGIK ---
   const handleTryOn = async () => {
@@ -142,10 +177,12 @@ const Wardrobe = () => {
       return;
     }
 
-    if (!selectedTop || !selectedBottom) {
+    if (!isOutfitReady) {
       showToast({
         title: "OUTFIT INCOMPLETE",
-        message: "Select one top and one bottom item before generating.",
+        message: isDressMode
+          ? "Select one dress before generating."
+          : "Select one top and one bottom item before generating.",
       });
       return;
     }
@@ -163,16 +200,26 @@ const Wardrobe = () => {
         if (!response.ok) throw new Error(`Fetch failed for ${url}`);
         return response.blob();
       };
-      const [avBlob, topBlob, btmBlob] = await Promise.all([
-        fetchBlob(userAvatar),
-        fetchBlob(selectedTop.image_path),
-        fetchBlob(selectedBottom.image_path),
-      ]);
 
       const formData = new FormData();
-      formData.append("avatar_image", avBlob, "avatar.png");
-      formData.append("top_image", topBlob, "top.png");
-      formData.append("bottom_image", btmBlob, "bottom.png");
+
+      if (isDressMode) {
+        const [avBlob, dressBlob] = await Promise.all([
+          fetchBlob(userAvatar),
+          fetchBlob(selectedDress.image_path),
+        ]);
+        formData.append("avatar_image", avBlob, "avatar.png");
+        formData.append("dress_image", dressBlob, "dress.png");
+      } else {
+        const [avBlob, topBlob, btmBlob] = await Promise.all([
+          fetchBlob(userAvatar),
+          fetchBlob(selectedTop.image_path),
+          fetchBlob(selectedBottom.image_path),
+        ]);
+        formData.append("avatar_image", avBlob, "avatar.png");
+        formData.append("top_image", topBlob, "top.png");
+        formData.append("bottom_image", btmBlob, "bottom.png");
+      }
 
       setGenerationStep("generating");
       const response = await authFetch("/try-on-outfit", {
@@ -214,6 +261,7 @@ const Wardrobe = () => {
     setDressedAvatar(null);
     setSelectedTop(null);
     setSelectedBottom(null);
+    setSelectedDress(null);
   };
 
   const handleDownload = async () => {
@@ -279,6 +327,8 @@ const Wardrobe = () => {
         <WardrobeActions
           isGenerating={isGenerating}
           dressedAvatar={dressedAvatar}
+          isDressMode={isDressMode}
+          isOutfitReady={isOutfitReady}
           selectedTop={selectedTop}
           selectedBottom={selectedBottom}
           hasAvatar={Boolean(userAvatar)}
@@ -293,34 +343,75 @@ const Wardrobe = () => {
           isGenerating={isGenerating}
           generationStep={generationStep}
           displayImage={displayImage}
+          isDressMode={isDressMode}
           selectedTop={selectedTop}
           selectedBottom={selectedBottom}
+          selectedDress={selectedDress}
           onCreateModel={() => navigate("/avatar")}
         />
 
         <div className="right-panel">
-          <ClothingSelector
-            label="TOPS"
-            items={tops}
-            currentItem={currentTop}
-            selectedItem={selectedTop}
-            onPrev={prevTop}
-            onNext={nextTop}
-            onSelect={setSelectedTop}
-            emptyMessage="Upload first top"
-            onEmptyAction={() => navigate("/closet")}
-          />
-          <ClothingSelector
-            label="BOTTOMS"
-            items={bottoms}
-            currentItem={currentBottom}
-            selectedItem={selectedBottom}
-            onPrev={prevBottom}
-            onNext={nextBottom}
-            onSelect={setSelectedBottom}
-            emptyMessage="Add bottom item"
-            onEmptyAction={() => navigate("/closet")}
-          />
+          <div
+            className="outfit-mode-switch"
+            role="group"
+            aria-label="Outfit type"
+          >
+            <button
+              type="button"
+              className={`outfit-mode-button ${isDressMode ? "" : "is-active"}`}
+              aria-pressed={!isDressMode}
+              onClick={() => handleModeChange("combo")}
+            >
+              TOP + BOTTOM
+            </button>
+            <button
+              type="button"
+              className={`outfit-mode-button ${isDressMode ? "is-active" : ""}`}
+              aria-pressed={isDressMode}
+              onClick={() => handleModeChange("dress")}
+            >
+              DRESS
+            </button>
+          </div>
+
+          {isDressMode ? (
+            <ClothingSelector
+              label="DRESSES"
+              items={dresses}
+              currentItem={currentDress}
+              selectedItem={selectedDress}
+              onPrev={prevDress}
+              onNext={nextDress}
+              onSelect={setSelectedDress}
+              emptyMessage="Upload first dress"
+              onEmptyAction={() => navigate("/closet")}
+            />
+          ) : (
+            <>
+              <ClothingSelector
+                label="TOPS"
+                items={tops}
+                currentItem={currentTop}
+                selectedItem={selectedTop}
+                onPrev={prevTop}
+                onNext={nextTop}
+                onSelect={setSelectedTop}
+                emptyMessage="Upload first top"
+                onEmptyAction={() => navigate("/closet")}
+              />
+              <ClothingSelector
+                label="BOTTOMS"
+                items={bottoms}
+                currentItem={currentBottom}
+                selectedItem={selectedBottom}
+                onPrev={prevBottom}
+                onNext={nextBottom}
+                onSelect={setSelectedBottom}
+                emptyMessage="Add bottom item"
+                onEmptyAction={() => navigate("/closet")}
+              />
+            </>
+          )}
         </div>
       </div>
 
