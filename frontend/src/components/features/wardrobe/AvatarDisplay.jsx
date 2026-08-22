@@ -4,8 +4,10 @@ const AvatarDisplay = ({
   isGenerating,
   generationStep,
   displayImage,
+  isDressMode,
   selectedTop,
   selectedBottom,
+  selectedDress,
   onCreateModel,
 }) => {
   const progressSteps = [
@@ -26,8 +28,20 @@ const AvatarDisplay = ({
           <div className="brutalist-loader-text">
             PROCESSING<span className="blink-block"></span>
           </div>
-          <div className="loader-status-line">{" >"} TOP_ID: {selectedTop?.id}</div>
-          <div className="loader-status-line">{" >"} BTM_ID: {selectedBottom?.id}</div>
+          {isDressMode ? (
+            <div className="loader-status-line">
+              {" >"} DRESS_ID: {selectedDress?.id}
+            </div>
+          ) : (
+            <>
+              <div className="loader-status-line">
+                {" >"} TOP_ID: {selectedTop?.id}
+              </div>
+              <div className="loader-status-line">
+                {" >"} BTM_ID: {selectedBottom?.id}
+              </div>
+            </>
+          )}
           <div className="generation-steps">
             {progressSteps.map((step, index) => (
               <div
