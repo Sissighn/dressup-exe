@@ -1,6 +1,8 @@
 export const AUTH_STORAGE_KEY = "dressupAuthSession";
+// Ein leerer VITE_API_BASE_URL bedeutet "gleicher Origin" und wird vom
+// Desktop-Build genutzt, wo das Backend das Frontend selbst ausliefert.
 export const API_BASE = (
-  import.meta.env.VITE_API_BASE_URL || "http://localhost:8000"
+  import.meta.env.VITE_API_BASE_URL ?? "http://localhost:8000"
 ).replace(/\/$/, "");
 
 export const USER_LOCAL_KEYS = [
@@ -10,6 +12,8 @@ export const USER_LOCAL_KEYS = [
   "userName",
   "selectedTop",
   "selectedBottom",
+  "selectedDress",
+  "outfitMode",
   "dressedAvatar",
 ];
 
