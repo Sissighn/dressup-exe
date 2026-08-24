@@ -1,0 +1,149 @@
+<!doctype html>
+<html lang="de">
+  <head>
+    <meta charset="UTF-8" />
+    <meta
+      http-equiv="Content-Security-Policy"
+      content="default-src 'none'; style-src 'unsafe-inline'; script-src 'unsafe-inline';"
+    />
+    <title>dressup.exe – Setup</title>
+    <style>
+      :root {
+        --bg-paper: #f3f2ef;
+        --accent-yellow: #e8d489;
+        --text-main: #1a1a1a;
+      }
+      * {
+        box-sizing: border-box;
+      }
+      body {
+        margin: 0;
+        padding: 34px 32px 28px;
+        background: var(--bg-paper);
+        color: var(--text-main);
+        font-family: -apple-system, BlinkMacSystemFont, "Inter", sans-serif;
+        font-size: 13px;
+        line-height: 1.55;
+        -webkit-user-select: none;
+      }
+      h1 {
+        margin: 0 0 4px;
+        font-size: 22px;
+        letter-spacing: -0.02em;
+      }
+      .sub {
+        margin: 0 0 22px;
+        opacity: 0.7;
+      }
+      label {
+        display: block;
+        font-weight: 600;
+        text-transform: uppercase;
+        letter-spacing: 0.08em;
+        font-size: 10px;
+        margin-bottom: 7px;
+      }
+      input {
+        width: 100%;
+        padding: 11px 12px;
+        font-family: ui-monospace, SFMono-Regular, Menlo, monospace;
+        font-size: 12px;
+        color: var(--text-main);
+        background: #fff;
+        border: 2px solid var(--text-main);
+        border-radius: 0;
+        outline: none;
+        -webkit-user-select: text;
+      }
+      input:focus {
+        box-shadow: 4px 4px 0 var(--accent-yellow);
+      }
+      .hint {
+        margin: 12px 0 0;
+        font-size: 12px;
+        opacity: 0.7;
+      }
+      .hint a {
+        color: inherit;
+      }
+      .error {
+        margin: 12px 0 0;
+        font-size: 12px;
+        font-weight: 600;
+        color: #a11d1d;
+        min-height: 18px;
+      }
+      .actions {
+        display: flex;
+        gap: 10px;
+        justify-content: flex-end;
+        margin-top: 24px;
+      }
+      button {
+        font: inherit;
+        font-weight: 600;
+        padding: 10px 20px;
+        border: 2px solid var(--text-main);
+        border-radius: 0;
+        background: #fff;
+        color: var(--text-main);
+        cursor: pointer;
+      }
+      button.primary {
+        background: var(--accent-yellow);
+        box-shadow: 4px 4px 0 var(--text-main);
+      }
+      button.primary:active {
+        transform: translate(2px, 2px);
+        box-shadow: 2px 2px 0 var(--text-main);
+      }
+    </style>
+  </head>
+  <body>
+    <h1>dressup.exe</h1>
+    <p class="sub">Einmalige Einrichtung</p>
+
+    <label for="key">Google AI API-Key</label>
+    <input id="key" type="password" spellcheck="false" placeholder="AIza…" autofocus />
+
+    <p class="hint">
+      Der Key wird für Avatar- und Outfit-Generierung gebraucht und lokal in
+      <em>~/Library/Application&nbsp;Support/dressup.exe</em> gespeichert. Du bekommst ihn
+      kostenlos unter aistudio.google.com/apikey.
+    </p>
+    <p class="error" id="error"></p>
+
+    <div class="actions">
+      <button type="button" id="skip">Später</button>
+      <button type="button" class="primary" id="save">Speichern &amp; starten</button>
+    </div>
+
+    <script>
+      const input = document.getElementById("key");
+      const errorLine = document.getElementById("error");
+
+      window.dressupSetup.getCurrentKey().then((key) => {
+        if (key) input.value = key;
+      });
+
+      const save = async (value) => {
+        await window.dressupSetup.submit(value);
+      };
+
+      document.getElementById("save").addEventListener("click", () => {
+        const value = input.value.trim();
+        if (!value) {
+          errorLine.textContent = "Bitte einen Key eingeben oder „Später“ wählen.";
+          return;
+        }
+        save(value);
+      });
+
+      document.getElementById("skip").addEventListener("click", () => save(""));
+
+      input.addEventListener("keydown", (event) => {
+        if (event.key === "Enter") document.getElementById("save").click();
+      });
+    </script>
+  </body>
+</html>
