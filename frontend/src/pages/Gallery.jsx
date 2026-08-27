@@ -2,7 +2,7 @@ import React, { useState, useEffect } from "react";
 import "../App.css";
 import GalleryHeader from "../components/features/gallery/GalleryHeader";
 import GalleryGrid from "../components/features/gallery/GalleryGrid";
-import DeleteItemModal from "../components/features/closet/DeleteItemModal/DeleteItemModal";
+import DeleteItemModal from "../components/common/DeleteItemModal/DeleteItemModal";
 import "../components/features/gallery/gallery.css";
 import { authFetch } from "../lib/authSession";
 
