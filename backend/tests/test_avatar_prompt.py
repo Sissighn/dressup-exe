@@ -11,7 +11,7 @@ FORM_BODY_TYPES = ["ATHLETIC", "SLIM", "CURVY", "RECTANGULAR"]
 
 
 def build(body_type, gender="FEMALE"):
-    return services.build_avatar_prompt("170", "62", body_type, gender, 1)
+    return services.build_avatar_prompt("170", "62", body_type, gender)
 
 
 def test_every_form_body_type_is_recognized():
