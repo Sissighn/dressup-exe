@@ -1,6 +1,6 @@
 import React, { useEffect, useState } from "react";
 import "../App.css";
-import DeleteItemModal from "../components/features/closet/DeleteItemModal/DeleteItemModal";
+import DeleteItemModal from "../components/common/DeleteItemModal/DeleteItemModal";
 import "../components/features/boards/boards.css";
 import { authFetch } from "../lib/authSession";
 
