@@ -87,14 +87,38 @@ Electron + electron-builder for the macOS app
 ## Project Structure
 
 ```
-backend/     FastAPI app split into routers, schemas, security, storage, services
-             Alembic migrations, protected uploads/ storage
-frontend/    React application (Auth, Avatar, Closet, Wardrobe, Gallery, About)
-database/    SQLite database file (closet.db)
-desktop/     Electron wrapper that packages backend, frontend, and a bundled
-             Python runtime into an installable macOS app
-docs/        Screenshots
+backend/                FastAPI application
+  main.py               app factory, CORS, router wiring, SPA mount
+  desktop_server.py     entry point for the packaged macOS app
+  settings.py           env-driven configuration
+  database.py           SQLAlchemy engine and session
+  security.py           password hashing, JWT claims, rate limiting
+  storage.py            validated upload handling
+  routers/              auth, avatar, closet, gallery endpoints
+  services/             AI pipeline, layered by concern:
+    images.py           local Pillow/rembg processing (no network)
+    prompts.py          pure prompt builders (no I/O)
+    generation.py       Gemini calls, retries, correction passes
+  alembic/              database migrations
+  tests/                pytest suite
+frontend/               React application
+  src/pages/            one file per route (Auth, Avatar, Closet, Wardrobe, …)
+  src/components/
+    common/             shared across features (Header, DeleteItemModal)
+    features/<feature>/  feature-local components and styles
+    layouts/            MainLayout shell
+  src/lib/              session handling and the authenticated fetch wrapper
+  e2e/                  Playwright specs
+database/               SQLite database file (closet.db)
+desktop/                Electron wrapper that packages backend, frontend, and a
+                        bundled Python runtime into an installable macOS app
+docs/                   Screenshots
 ```
+
+The `services/` split keeps the expensive layer isolated: `prompts.py` and
+`images.py` are pure enough to test without ever calling Gemini, which is why
+the prompt behaviour is covered by assertions on generated text rather than by
+real image generations.
 
 ---
 

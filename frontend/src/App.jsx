@@ -62,48 +62,52 @@ function App() {
           setSession(nextSession);
 
           if (authUser?.role === "user") {
-          const profileResponse = await fetch(`${API_BASE}/profile`, {
-            credentials: "include",
-          });
+            const profileResponse = await fetch(`${API_BASE}/profile`, {
+              credentials: "include",
+            });
 
-          if (profileResponse.ok) {
-            const profile = await profileResponse.json();
+            if (profileResponse.ok) {
+              const profile = await profileResponse.json();
 
-            if (profile.avatar_url) {
-              setScopedItem("userAvatar", profile.avatar_url, nextSession);
-            } else {
-              removeScopedItem("userAvatar", nextSession);
+              if (profile.avatar_url) {
+                setScopedItem("userAvatar", profile.avatar_url, nextSession);
+              } else {
+                removeScopedItem("userAvatar", nextSession);
+              }
+
+              const nextProfileImage =
+                profile.face_scan_url || profile.avatar_url || "";
+              if (nextProfileImage) {
+                setScopedItem(
+                  "userProfileImage",
+                  nextProfileImage,
+                  nextSession,
+                );
+              } else {
+                removeScopedItem("userProfileImage", nextSession);
+              }
+              setProfileImage(nextProfileImage);
+
+              if (profile.display_name) {
+                setScopedItem("userName", profile.display_name, nextSession);
+              }
+
+              const biometrics = {
+                name: profile.display_name || "",
+                gender: profile.gender || "FEMALE",
+                height: profile.height || "",
+                weight: profile.weight || "",
+                bodyType: profile.body_type || "ATHLETIC",
+              };
+              setScopedItem(
+                "userBiometrics",
+                JSON.stringify(biometrics),
+                nextSession,
+              );
             }
-
-            const nextProfileImage =
-              profile.face_scan_url || profile.avatar_url || "";
-            if (nextProfileImage) {
-              setScopedItem("userProfileImage", nextProfileImage, nextSession);
-            } else {
-              removeScopedItem("userProfileImage", nextSession);
-            }
-            setProfileImage(nextProfileImage);
-
-            if (profile.display_name) {
-              setScopedItem("userName", profile.display_name, nextSession);
-            }
-
-            const biometrics = {
-              name: profile.display_name || "",
-              gender: profile.gender || "FEMALE",
-              height: profile.height || "",
-              weight: profile.weight || "",
-              bodyType: profile.body_type || "ATHLETIC",
-            };
-            setScopedItem(
-              "userBiometrics",
-              JSON.stringify(biometrics),
-              nextSession,
-            );
+          } else {
+            setProfileImage("");
           }
-        } else {
-          setProfileImage("");
-        }
         }
       } catch {
         localStorage.removeItem(AUTH_STORAGE_KEY);
